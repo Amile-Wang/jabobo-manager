@@ -57,6 +57,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   // 修正2：版本号比较逻辑（关键！写反的地方）
   // 正确逻辑：预期版本 > 当前版本 时显示new
   const showNewBadge = compareVersion(expectedVersion, currentVersion) === 1;
+  const isVersionMismatch = currentVersion !== expectedVersion;
 
   // 修正3：新增调试日志（便于排查版本号值的问题）
   useEffect(() => {
@@ -200,11 +201,11 @@ const Dashboard: React.FC<DashboardProps> = ({
               <span className="text-[9px] text-gray-500 font-bold">
                 {t('dashboard.version')}: {currentVersion}
               </span>
-              {/* 新增：显示预期版本（便于调试） */}
-              <span className="text-[9px] text-blue-500 font-bold">
-                ({expectedVersion})
-              </span>
-
+                  {isVersionMismatch && (
+                <span className="text-[9px] text-blue-500 font-bold">
+                  ({expectedVersion})
+                </span>
+               )}
               {/* 修复new标识定位：相对于版本号行定位，精准对齐 */}
               {showNewBadge && (
                 <div className="absolute top-1/2 right-0 -translate-y-1/2 bg-red-500 text-white text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full z-10 shadow-sm">
