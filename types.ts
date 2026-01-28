@@ -144,6 +144,6 @@ export interface ApiResponse<T = any> {
   
   // 声纹注册特有字段
   voiceprint_info?: VoiceprintRegisterResponse; // 声纹注册信息
-  current_version: string;
-  expected_version: string;
+  current_version?: string;
+  expected_version?: string;
 }

@@ -35,7 +35,7 @@ export const JaboboVoice = {
   },
 
   deleteAudio: async (jaboboId: string, filePath: string): Promise<ApiResponse> => {
-    const response = await apiClient.delete('/user/delete-audio', {
+    const response = await apiClient.post('/user/delete-audio', {
       params: { jabobo_id: jaboboId, file_path: filePath }
     });
     return response.data;
@@ -141,7 +141,7 @@ export const JaboboVoice = {
       formData.append("voiceprint_name", voiceprintName.trim());
       formData.append("speaker_id", speakerId.trim()); // 优先级更高
 
-      const response = await apiClient.delete('/voiceprint/delete', {
+      const response = await apiClient.post('/voiceprint/delete', {
         data: formData, // DELETE请求的Form参数放在data里（而非params）
         headers: { 'Content-Type': 'multipart/form-data' }
       });

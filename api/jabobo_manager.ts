@@ -18,7 +18,7 @@ export const JaboboManager = {
     // 👈 逻辑补全：解绑设备 (Delete)
     // 使用 delete 方法，并通过 params 传递 jabobo_id 匹配后端 Query 参数
     unbindJabobo: async (jaboboId: string): Promise<ApiResponse> => {
-      const response = await apiClient.delete('/user/unbind', {
+      const response = await apiClient.post('/user/unbind', {
         params: { jabobo_id: jaboboId }
       });
       return response.data;
