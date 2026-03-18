@@ -7,6 +7,11 @@
       "story": "Story",
       "support": "Support"
     },
+    "download": {
+      "android": "Download for Android",
+      "ios": "Download for iOS"
+    },
+    
     "hero": {
       "title1": "Warm Companionship with AI",
       "title2": "Every Childhood",

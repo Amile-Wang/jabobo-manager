@@ -7,6 +7,10 @@
       "story": "故事",
       "support": "支持"
     },
+    "download": {
+      "android": "下载安卓版",
+      "ios": "下载iOS版"
+    },
     "hero": {
       "title1": "用 AI 温暖陪伴",
       "title2": "每一个童年",
