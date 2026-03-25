@@ -1,0 +1,11 @@
+```
+feat(landing): 添加下载按钮功能并集成Font Awesome图标库
+
+- 集成@fortawesome/fontawesome-svg-core、@fortawesome/free-brands-svg-icons
+  和@fortawesome/react-fontawesome依赖包
+- 在LandingPage组件中添加Android和iOS下载按钮
+- 使用Font Awesome官方图标显示安卓机器人和苹果Logo
+- 配置下载链接跳转地址
+- 添加国际化资源文件中的下载文本翻译
+- 移除原有的信任部分section
+```
