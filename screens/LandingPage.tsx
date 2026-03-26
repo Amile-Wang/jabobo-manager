@@ -1,10 +1,18 @@
 // src/screens/LandingPage.tsx
 import React from 'react';
-import { useTranslation } from 'react-i18next'; // 引入翻译钩子
-import productImg from '../assets/login.png'; 
+import { useTranslation } from 'react-i18next';
+// 导入 Font Awesome 官方图标（安卓/苹果）
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faAndroid, faApple } from '@fortawesome/free-brands-svg-icons';
 
-// 导入i18n配置（确保在应用入口也导入一次）
+import productImg from '../assets/login.png'; 
 import '../i18n';
+
+// 下载链接配置（替换为你的真实服务器域名）
+const DOWNLOAD_LINKS = {
+  android: 'https://jabobo.com/api/app/download?platform=android', // 安卓APK下载链接
+  ios: 'itms-services://?action=download-manifest&url=https://jabobo.com/api/app/ios-plist' // iOS安装链接
+};
 
 const LandingPage: React.FC = () => {
   const { t, i18n } = useTranslation(); // 获取翻译函数和i18n实例
@@ -64,6 +72,32 @@ const LandingPage: React.FC = () => {
             <p className="mt-6 text-lg text-gray-700 max-w-lg">
               {t('landing.hero.desc')}
             </p>
+            
+            {/* 核心：下载按钮区域（Font Awesome 官方安卓/苹果图标） */}
+            <div className="mt-10 flex flex-wrap gap-4">
+              {/* 安卓下载按钮（官方机器人图标） */}
+              <a 
+                href={DOWNLOAD_LINKS.android}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md transition"
+              >
+                <FontAwesomeIcon icon={faAndroid} className="mr-2" size="lg" />
+                {t('landing.download.android')}
+              </a>
+              
+              {/* iOS下载按钮（官方苹果Logo图标） */}
+              <a 
+                href={DOWNLOAD_LINKS.ios}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center px-6 py-3 bg-gray-800 hover:bg-gray-900 text-white rounded-lg shadow-md transition"
+              >
+                <FontAwesomeIcon icon={faApple} className="mr-2" size="lg" />
+                {t('landing.download.ios')}
+              </a>
+            </div>
+
             <div className="mt-8 flex flex-wrap gap-4">
               <div className="flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
@@ -133,16 +167,6 @@ const LandingPage: React.FC = () => {
       </section>
 
       {/* Trust Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4 text-center">
-          <h3 className="text-2xl font-bold text-gray-900">{t('landing.trust.title')}</h3>
-          <p className="mt-4 text-gray-600 max-w-2xl mx-auto">
-            {t('landing.trust.desc')}
-          </p>
-        </div>
-      </section>
-
-      {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
