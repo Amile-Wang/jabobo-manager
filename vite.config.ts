@@ -6,6 +6,7 @@ import path from 'path'
 // 导出Vite配置（最简核心版，适配你的React+TS项目）
 export default defineConfig({
   // 必须：启用React插件，否则Vite无法编译React/TSX代码
+  base: '/jabobo/',
   plugins: [react()],
 
   // 路径别名配置（解决@/*找不到模块的问题，和tsconfig.json配套）
