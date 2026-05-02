@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Waves, Book, UserCircle, Brain, RefreshCw, Plus, Settings2, Users, LogOut, Loader2, ChevronLeft, Cpu, X } from 'lucide-react';
-import { useTranslation } from 'react-i18next'; 
+import { Waves, Book, UserCircle, Brain, RefreshCw, Plus, Settings2, Users, LogOut, Loader2, ChevronLeft, Cpu, X, Mic, Speaker, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import { Screen, Persona } from '../types';
-import { UserConfig } from "@/types";
+import { UserConfig, AsrProvider, TtsProvider } from "@/types";
 import { JaboboConfig } from '../api/jabobo_congfig';
 import dashboadImg from '../assets/dashboad.png'; 
 
@@ -37,7 +37,14 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [tempPersonaName, setTempPersonaName] = useState('');
   const [currentVersion, setCurrentVersion] = useState('1.0.0');
   const [expectedVersion, setExpectedVersion] = useState('1.0.0');
+  const [wsUrl, setWsUrl] = useState('');
+  const [wsUrlList, setWsUrlList] = useState<string[]>([]);
+  const [showWsUrlAdder, setShowWsUrlAdder] = useState(false);
+  const [newWsUrl, setNewWsUrl] = useState('');
+  const [asrProvider, setAsrProvider] = useState<AsrProvider>('');
+  const [ttsProvider, setTtsProvider] = useState<TtsProvider>('');
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const newWsUrlInputRef = useRef<HTMLInputElement>(null);
 
   // 修正1：版本号比较函数（逻辑正确，保留）
   const compareVersion = (v1: string, v2: string): number => {
@@ -86,6 +93,12 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [editingPersonaId]);
 
+  useEffect(() => {
+    if (showWsUrlAdder && newWsUrlInputRef.current) {
+      newWsUrlInputRef.current.focus();
+    }
+  }, [showWsUrlAdder]);
+
   const fetchServerConfig = async () => {
     try {
       const res = await JaboboConfig.getUserConfig(jaboboId);
@@ -111,6 +124,16 @@ const Dashboard: React.FC<DashboardProps> = ({
         const ev = res.data.expected_version || '1.0.0';
         setCurrentVersion(cv);
         setExpectedVersion(ev);
+        const savedWs = res.data.websocket_url || '';
+        setWsUrl(savedWs);
+        const rawList = Array.isArray(res.data.websocket_url_list) ? res.data.websocket_url_list : [];
+        const cleanList = rawList.filter((u): u is string => typeof u === 'string' && u.trim() !== '');
+        const merged = savedWs && !cleanList.includes(savedWs)
+          ? [savedWs, ...cleanList]
+          : cleanList;
+        setWsUrlList(merged);
+        setAsrProvider((res.data.asr_provider as AsrProvider) || '');
+        setTtsProvider((res.data.tts_provider as TtsProvider) || '');
         console.log('从接口读取的版本号：', { current_version: cv, expected_version: ev });
       }
     } catch (err) { console.error('获取配置失败：', err); }
@@ -147,13 +170,21 @@ const Dashboard: React.FC<DashboardProps> = ({
       if (!selected) return;
       const newOrdered = [selected, ...personas.filter(p => p.id !== activePersonaId)];
 
+      const trimmedWs = wsUrl.trim();
+      const dedupList = Array.from(new Set(
+        wsUrlList.map(u => u.trim()).filter(Boolean)
+      ));
       const payload: UserConfig = {
-        persona: JSON.stringify(newOrdered), 
+        persona: JSON.stringify(newOrdered),
         memory: memory,
         voice_status: voiceStatus,
         kb_status: kbStatus,
         current_version: currentVersion,
-        expected_version: expectedVersion
+        expected_version: expectedVersion,
+        websocket_url: trimmedWs,
+        websocket_url_list: dedupList,
+        asr_provider: asrProvider,
+        tts_provider: ttsProvider
       };
       
       const res = await JaboboConfig.syncConfig(jaboboId, payload);
@@ -167,6 +198,33 @@ const Dashboard: React.FC<DashboardProps> = ({
     } finally {
       setIsSyncing(false);
     }
+  };
+
+  const isValidWsUrl = (raw: string): boolean => {
+    const v = raw.trim();
+    if (!v) return false;
+    return /^wss?:\/\/[^\s]+$/i.test(v);
+  };
+
+  const handleAddWsUrl = () => {
+    const v = newWsUrl.trim();
+    if (!isValidWsUrl(v)) {
+      alert(t('dashboard.wsUrlInvalid'));
+      return;
+    }
+    if (wsUrlList.includes(v)) {
+      alert(t('dashboard.wsUrlDuplicate'));
+      return;
+    }
+    setWsUrlList(prev => [...prev, v]);
+    setWsUrl(v);
+    setNewWsUrl('');
+    setShowWsUrlAdder(false);
+  };
+
+  const handleRemoveWsUrl = (target: string) => {
+    setWsUrlList(prev => prev.filter(u => u !== target));
+    if (wsUrl === target) setWsUrl('');
   };
 
   const handleLogout = () => {
@@ -290,12 +348,107 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
             ))}
           </div>
-          <textarea 
+          <textarea
             value={activePersona.content}
             onChange={(e) => onUpdatePersona(activePersonaId, e.target.value)}
             className="w-full bg-gray-50 rounded-2xl p-4 text-sm text-gray-600 focus:outline-none min-h-[120px] resize-none"
             placeholder={t('dashboard.personaPlaceholder')}
           />
+          <div className="mt-4">
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+              {t('dashboard.wsUrl')}
+            </label>
+            <div className="flex items-center gap-2">
+              <select
+                value={wsUrl}
+                onChange={(e) => setWsUrl(e.target.value)}
+                className="flex-1 bg-gray-50 rounded-2xl p-4 text-sm text-gray-600 focus:outline-none font-mono appearance-none cursor-pointer"
+                aria-label={t('dashboard.wsUrlSelect')}
+              >
+                <option value="">{t('dashboard.wsUrlDefault')}</option>
+                {wsUrlList.map((url) => (
+                  <option key={url} value={url}>{url}</option>
+                ))}
+              </select>
+              {wsUrl && wsUrlList.includes(wsUrl) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm(t('dashboard.wsUrlRemove') + '?')) handleRemoveWsUrl(wsUrl);
+                  }}
+                  className="p-3 rounded-xl bg-gray-50 text-gray-400 hover:text-red-500 active:scale-95"
+                  aria-label={t('dashboard.wsUrlRemove')}
+                  title={t('dashboard.wsUrlRemove')}
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowWsUrlAdder(v => !v)}
+                className="p-3 rounded-xl bg-gray-50 text-gray-400 hover:text-yellow-500 active:scale-95"
+                aria-label={t('dashboard.wsUrlAddCustom')}
+                title={t('dashboard.wsUrlAddCustom')}
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+            {showWsUrlAdder && (
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  ref={newWsUrlInputRef}
+                  type="text"
+                  value={newWsUrl}
+                  onChange={(e) => setNewWsUrl(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleAddWsUrl();
+                    if (e.key === 'Escape') {
+                      setShowWsUrlAdder(false);
+                      setNewWsUrl('');
+                    }
+                  }}
+                  className="flex-1 bg-gray-50 rounded-2xl p-3 text-sm text-gray-600 focus:outline-none font-mono"
+                  placeholder={t('dashboard.wsUrlNewPlaceholder')}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddWsUrl}
+                  className="px-4 py-3 rounded-xl bg-yellow-400 text-gray-900 text-xs font-black active:scale-95"
+                >
+                  {t('dashboard.wsUrlAdd')}
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+                <Mic size={10} /> {t('dashboard.asrProvider')}
+              </label>
+              <select
+                value={asrProvider}
+                onChange={(e) => setAsrProvider(e.target.value as AsrProvider)}
+                className="w-full bg-gray-50 rounded-2xl p-4 text-sm text-gray-600 focus:outline-none cursor-pointer"
+              >
+                <option value="funasr">{t('dashboard.asrFunasr')}</option>
+                <option value="azure_asr">{t('dashboard.asrAzure')}</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+                <Speaker size={10} /> {t('dashboard.ttsProvider')}
+              </label>
+              <select
+                value={ttsProvider}
+                onChange={(e) => setTtsProvider(e.target.value as TtsProvider)}
+                className="w-full bg-gray-50 rounded-2xl p-4 text-sm text-gray-600 focus:outline-none cursor-pointer"
+              >
+                <option value="huoshan_double_stream">{t('dashboard.ttsHuoshanDoubleStream')}</option>
+                <option value="azure_tts">{t('dashboard.ttsAzure')}</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
 

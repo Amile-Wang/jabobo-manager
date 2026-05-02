@@ -1,5 +1,5 @@
   import React, { useState, useEffect } from 'react';
-  import { Plus, Cpu, LogOut, Link as LinkIcon, X, Loader2, Trash2 } from 'lucide-react';
+  import { Plus, Cpu, LogOut, Link as LinkIcon, X, Loader2, Trash2, Pencil } from 'lucide-react';
   import Layout from '../components/Layout';
   import { Screen } from '../types';
   import { jaboboManager } from '../api/jabobo_manager';
@@ -11,15 +11,24 @@
     onNavigate: (screen: Screen) => void;
   }
 
+  interface DeviceItem {
+    id: string;
+    name: string | null;
+  }
+
   const JaboboSelector: React.FC<JaboboSelectorProps> = ({ onSelect, onNavigate }) => {
     // 状态管理
-    const [uuids, setUuids] = useState<string[]>([]);
+    const [devices, setDevices] = useState<DeviceItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isBinding, setIsBinding] = useState(false);
     const [inputUuid, setInputUuid] = useState('');
     const [validateError, setValidateError] = useState('');
     const [deleteConfirmUuid, setDeleteConfirmUuid] = useState<string | null>(null);
     const [deletingUuid, setDeletingUuid] = useState<string | null>(null);
+    const [renameTargetUuid, setRenameTargetUuid] = useState<string | null>(null);
+    const [renameInput, setRenameInput] = useState('');
+    const [renameError, setRenameError] = useState('');
+    const [renamingUuid, setRenamingUuid] = useState<string | null>(null);
 
     // 多语言：使用 ready 状态判断翻译是否加载完成（替代 isLoaded）
     const { t, ready, i18n } = useTranslation();
@@ -44,8 +53,10 @@
       setIsLoading(true);
       try {
         const res = await jaboboManager.getJaboboIds();
-        if (res.success && Array.isArray(res.jabobo_ids)) {
-          setUuids(res.jabobo_ids);
+        if (res.success && Array.isArray(res.jabobos)) {
+          setDevices(res.jabobos.map(d => ({ id: d.jabobo_id, name: d.device_name })));
+        } else if (res.success && Array.isArray(res.jabobo_ids)) {
+          setDevices(res.jabobo_ids.map(id => ({ id, name: null })));
         }
       } catch (err) {
         console.error(ready ? t("common.networkError") : "网络错误，请重试", err);
@@ -128,7 +139,7 @@
       try {
         const res = await jaboboManager.unbindJabobo(uuid);
         if (res.success) {
-          setUuids(prev => prev.filter(item => item !== uuid));
+          setDevices(prev => prev.filter(item => item.id !== uuid));
           alert(t("jaboboSelector.deleteSuccess"));
         } else {
           alert(res.message || t("jaboboSelector.deleteFail"));
@@ -139,6 +150,46 @@
       } finally {
         setDeletingUuid(null);
         setDeleteConfirmUuid(null);
+      }
+    };
+
+    // 打开重命名弹窗
+    const openRename = (uuid: string, currentName: string | null) => {
+      setRenameTargetUuid(uuid);
+      setRenameInput(currentName ?? '');
+      setRenameError('');
+    };
+
+    const closeRename = () => {
+      setRenameTargetUuid(null);
+      setRenameInput('');
+      setRenameError('');
+    };
+
+    // 提交重命名
+    const handleRename = async (uuid: string) => {
+      const trimmed = renameInput.trim();
+      if (trimmed.length > 64) {
+        setRenameError(t("jaboboSelector.renameTooLong"));
+        return;
+      }
+      if (renamingUuid === uuid) return;
+      setRenamingUuid(uuid);
+      try {
+        const newName = trimmed === '' ? null : trimmed;
+        const res = await jaboboManager.renameJabobo(uuid, newName);
+        if (res.success) {
+          const persisted = (res.device_name ?? newName) as string | null;
+          setDevices(prev => prev.map(d => d.id === uuid ? { ...d, name: persisted } : d));
+          closeRename();
+        } else {
+          alert(res.message || t("jaboboSelector.renameFail"));
+        }
+      } catch (err) {
+        console.error(t("jaboboSelector.renameFail"), err);
+        alert(t("common.networkError"));
+      } finally {
+        setRenamingUuid(null);
       }
     };
 
@@ -182,14 +233,15 @@
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {/* 已绑定设备 */}
-              {uuids.map(uuid => (
-                <div 
-                  key={uuid} 
+              {devices.map(({ id: uuid, name }) => (
+                <div
+                  key={uuid}
                   className="group bg-gray-50 border-2 border-transparent hover:border-yellow-400 p-10 rounded-[40px] transition-all cursor-pointer shadow-sm hover:shadow-xl relative"
                 >
-                  <div 
+                  <div
                     onClick={(e) => {
-                      if (!e.target.closest('.delete-btn')) {
+                      const target = e.target as HTMLElement;
+                      if (!target.closest('.delete-btn') && !target.closest('.rename-btn')) {
                         onSelect(uuid);
                       }
                     }}
@@ -198,23 +250,36 @@
                     <div className="w-20 h-20 bg-gray-900 rounded-[24px] flex items-center justify-center text-yellow-400 mb-8 group-hover:scale-110 transition-transform shadow-lg">
                       <Cpu size={40} />
                     </div>
-                    <div className="font-black text-2xl text-gray-900 italic tracking-tight mb-2 uppercase">
-                      {t("jaboboSelector.deviceCardTitle")}
+                    <div className="font-black text-2xl text-gray-900 italic tracking-tight mb-2 uppercase break-words">
+                      {name && name.trim() !== '' ? name : t("jaboboSelector.deviceCardTitle")}
                     </div>
-                    <div className="font-mono text-sm text-gray-400 font-bold tracking-widest">{uuid}</div>
+                    <div className="font-mono text-sm text-gray-400 font-bold tracking-widest break-all">{uuid}</div>
                   </div>
 
-                  {/* 删除按钮 */}
-                  <button 
-                    className="delete-btn absolute top-6 right-6 p-2 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 z-10"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteConfirmUuid(uuid);
-                    }}
-                    aria-label={t("common.delete")}
-                  >
-                    <Trash2 size={20} />
-                  </button>
+                  {/* 重命名 + 删除按钮 */}
+                  <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <button
+                      className="rename-btn p-2 text-gray-300 hover:text-yellow-500 transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openRename(uuid, name);
+                      }}
+                      aria-label={t("jaboboSelector.rename")}
+                      title={t("jaboboSelector.rename")}
+                    >
+                      <Pencil size={20} />
+                    </button>
+                    <button
+                      className="delete-btn p-2 text-gray-300 hover:text-red-500 transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteConfirmUuid(uuid);
+                      }}
+                      aria-label={t("common.delete")}
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  </div>
 
                   {/* 删除确认弹窗 */}
                   {deleteConfirmUuid === uuid && (
@@ -223,13 +288,13 @@
                         {t("jaboboSelector.deleteConfirm")}
                       </p>
                       <div className="flex gap-4">
-                        <button 
+                        <button
                           onClick={() => setDeleteConfirmUuid(null)}
                           className="bg-gray-200 text-gray-800 px-6 py-2 rounded-xl font-black text-xs uppercase"
                         >
                           {t("common.cancel")}
                         </button>
-                        <button 
+                        <button
                           onClick={() => handleDelete(uuid)}
                           disabled={deletingUuid === uuid}
                           className="bg-red-500 text-white px-6 py-2 rounded-xl font-black text-xs uppercase active:scale-95 transition-all"
@@ -238,6 +303,55 @@
                             <Loader2 size={16} className="animate-spin mx-auto" />
                           ) : (
                             t("common.delete")
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 重命名弹窗 */}
+                  {renameTargetUuid === uuid && (
+                    <div
+                      className="absolute inset-0 bg-black/80 rounded-[40px] flex flex-col items-stretch justify-center z-20 p-6 animate-in fade-in-50"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <p className="text-white font-black text-sm mb-3 text-center uppercase tracking-widest">
+                        {t("jaboboSelector.renameTitle")}
+                      </p>
+                      <input
+                        autoFocus
+                        value={renameInput}
+                        onChange={(e) => {
+                          setRenameInput(e.target.value);
+                          if (renameError) setRenameError('');
+                        }}
+                        maxLength={64}
+                        placeholder={t("jaboboSelector.renamePlaceholder")}
+                        className={`w-full bg-white rounded-xl px-4 py-3 font-bold text-gray-900 outline-none mb-1 text-sm ${
+                          renameError ? 'border-2 border-red-500' : ''
+                        }`}
+                      />
+                      {renameError ? (
+                        <p className="text-red-300 text-xs font-bold mb-3">{renameError}</p>
+                      ) : (
+                        <p className="text-gray-300 text-[10px] mb-3">{t("jaboboSelector.renameClearHint")}</p>
+                      )}
+                      <div className="flex gap-3 justify-center">
+                        <button
+                          onClick={closeRename}
+                          className="bg-gray-200 text-gray-800 px-5 py-2 rounded-xl font-black text-xs uppercase"
+                        >
+                          {t("common.cancel")}
+                        </button>
+                        <button
+                          onClick={() => handleRename(uuid)}
+                          disabled={renamingUuid === uuid}
+                          className="bg-yellow-400 text-gray-900 px-5 py-2 rounded-xl font-black text-xs uppercase active:scale-95 transition-all"
+                        >
+                          {renamingUuid === uuid ? (
+                            <Loader2 size={16} className="animate-spin mx-auto" />
+                          ) : (
+                            t("common.save")
                           )}
                         </button>
                       </div>

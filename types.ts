@@ -111,6 +111,9 @@ export interface User {
 /**
  * 用户配置信息接口
  */
+export type AsrProvider = '' | 'funasr' | 'azure_asr';
+export type TtsProvider = '' | 'huoshan_double_stream' | 'azure_tts';
+
 export interface UserConfig {
   persona: string;
   memory: string;
@@ -118,6 +121,10 @@ export interface UserConfig {
   kb_status: string;
   current_version: string;
   expected_version: string;
+  websocket_url?: string;
+  websocket_url_list?: string[];
+  asr_provider?: AsrProvider;
+  tts_provider?: TtsProvider;
 }
 
 /**
@@ -132,6 +139,8 @@ export interface ApiResponse<T = any> {
   username?: string; // 用户名
   role?: string; // 用户角色
   jabobo_ids?: string[]; // 设备ID列表
+  jabobos?: { jabobo_id: string; device_name: string | null }[]; // 含名称的设备列表
+  device_name?: string | null; // 重命名接口返回
   files?: any[]; // 通用文件列表（兼容旧接口）
   
   // 音频接口特有字段

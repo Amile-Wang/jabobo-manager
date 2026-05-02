@@ -73,7 +73,14 @@
       "empty": "设备ID不能为空",
       "formatError": "设备ID格式错误（应为xx:xx:xx:xx:xx:xx或6位纯数字）"
     },
-    "invalidDeviceId": "设备ID格式无效（应为xx:xx:xx:xx:xx:xx或6位纯数字）"
+    "invalidDeviceId": "设备ID格式无效（应为xx:xx:xx:xx:xx:xx或6位纯数字）",
+    "rename": "重命名",
+    "renameTitle": "为设备取名字",
+    "renamePlaceholder": "输入设备名称（最多 64 字符）",
+    "renameTooLong": "名称最多 64 字符",
+    "renameSuccess": "重命名成功",
+    "renameFail": "重命名失败",
+    "renameClearHint": "留空可清除名称"
   },
   "common": {
     "delete": "删除",
@@ -123,8 +130,23 @@
     "settings": "设置",
     "adminPanel": "管理面板",
     "signOut": "退出登录",
-    "version": "版本"
-
+    "version": "版本",
+    "wsUrl": "WebSocket 地址",
+    "wsUrlPlaceholder": "留空使用默认服务器",
+    "wsUrlSelect": "选择 WebSocket 地址",
+    "wsUrlDefault": "默认服务器",
+    "wsUrlAddCustom": "添加自定义",
+    "wsUrlNewPlaceholder": "wss://your.server/ws/xiaozhi/v1/",
+    "wsUrlAdd": "添加",
+    "wsUrlRemove": "移除",
+    "wsUrlInvalid": "请输入合法的 WebSocket 地址（ws:// 或 wss://）",
+    "wsUrlDuplicate": "该地址已在列表中",
+    "asrProvider": "ASR 模型",
+    "ttsProvider": "TTS 模型",
+    "asrFunasr": "本地 FunASR",
+    "asrAzure": "Azure ASR",
+    "ttsHuoshanDoubleStream": "火山双流式 TTS",
+    "ttsAzure": "Azure TTS"
   },
   "voiceprint": {
     "title": "声纹管理", 

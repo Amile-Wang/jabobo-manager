@@ -18,7 +18,7 @@ export const JaboboManager = {
     // 👈 逻辑补全：解绑设备 (Delete)
     // 使用 delete 方法，并通过 params 传递 jabobo_id 匹配后端 Query 参数
     unbindJabobo: async (jaboboId: string): Promise<ApiResponse> => {
-      const response = await apiClient.post('/user/unbind', {
+      const response = await apiClient.delete('/user/unbind', {
         params: { jabobo_id: jaboboId }
       });
       return response.data;
@@ -31,7 +31,16 @@ export const JaboboManager = {
       });
       return response.data;
     },
-  
+
+    // 重命名设备：传入 null 或空字符串可清空名称（恢复默认显示）
+    renameJabobo: async (jaboboId: string, deviceName: string | null): Promise<ApiResponse> => {
+      const response = await apiClient.put('/user/rename_device', {
+        jabobo_id: jaboboId,
+        device_name: deviceName,
+      });
+      return response.data;
+    },
+
   };
   
   // 别名导出，确保兼容性

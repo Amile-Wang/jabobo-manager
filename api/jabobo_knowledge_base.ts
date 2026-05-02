@@ -34,10 +34,10 @@ export const JaboboKnownledgeBase = {
 
   // 3. 修正路径为 /user/delete-kb
   deleteKnowledgeBase: async (jaboboId: string, filePath: string): Promise<any> => {
-    const response = await apiClient.post('/user/delete-kb', {
+    const response = await apiClient.post('/user/delete-kb', null, {
       params: {
         jabobo_id: jaboboId,
-        file_path: filePath 
+        file_path: filePath
       }
     });
     return response.data;

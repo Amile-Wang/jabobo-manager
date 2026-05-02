@@ -74,7 +74,14 @@
       "empty": "Device ID cannot be empty",
       "formatError": "Device ID format error (should be xx:xx:xx:xx:xx:xx or 6-digit number)"
     },
-    "invalidDeviceId": "Invalid device ID format (should be xx:xx:xx:xx:xx:xx or 6-digit number)"
+    "invalidDeviceId": "Invalid device ID format (should be xx:xx:xx:xx:xx:xx or 6-digit number)",
+    "rename": "Rename",
+    "renameTitle": "Name this device",
+    "renamePlaceholder": "Enter device name (up to 64 chars)",
+    "renameTooLong": "Name must be 64 characters or fewer",
+    "renameSuccess": "Renamed successfully",
+    "renameFail": "Rename failed",
+    "renameClearHint": "Leave blank to clear the name"
   },
   "dashboard": {
     "loading": "Loading...",
@@ -104,7 +111,23 @@
     "settings": "Settings",
     "adminPanel": "Admin Panel",
     "signOut": "Sign Out",
-    "version": "Version"
+    "version": "Version",
+    "wsUrl": "WebSocket URL",
+    "wsUrlPlaceholder": "Leave blank for default",
+    "wsUrlSelect": "Select WebSocket URL",
+    "wsUrlDefault": "Default server",
+    "wsUrlAddCustom": "Add custom",
+    "wsUrlNewPlaceholder": "wss://your.server/ws/xiaozhi/v1/",
+    "wsUrlAdd": "Add",
+    "wsUrlRemove": "Remove",
+    "wsUrlInvalid": "Please enter a valid WebSocket URL (ws:// or wss://)",
+    "wsUrlDuplicate": "This URL is already in the list",
+    "asrProvider": "ASR Model",
+    "ttsProvider": "TTS Model",
+    "asrFunasr": "Local FunASR",
+    "asrAzure": "Azure ASR",
+    "ttsHuoshanDoubleStream": "Huoshan DoubleStream TTS",
+    "ttsAzure": "Azure TTS"
   },
   "voiceprint": {
     "title": "Voiceprint Management",

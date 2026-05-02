@@ -35,7 +35,7 @@ export const JaboboVoice = {
   },
 
   deleteAudio: async (jaboboId: string, filePath: string): Promise<ApiResponse> => {
-    const response = await apiClient.post('/user/delete-audio', {
+    const response = await apiClient.post('/user/delete-audio', null, {
       params: { jabobo_id: jaboboId, file_path: filePath }
     });
     return response.data;
@@ -135,14 +135,12 @@ export const JaboboVoice = {
         };
       }
 
-      // 🔥 核心修正：DELETE请求用FormData传参（适配后端Form接收）
       const formData = new FormData();
       formData.append("jabobo_id", jaboboId.trim());
       formData.append("voiceprint_name", voiceprintName.trim());
       formData.append("speaker_id", speakerId.trim()); // 优先级更高
 
-      const response = await apiClient.post('/voiceprint/delete', {
-        data: formData, // DELETE请求的Form参数放在data里（而非params）
+      const response = await apiClient.post('/voiceprint/delete', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
@@ -156,9 +154,13 @@ export const JaboboVoice = {
       console.error("【删除声纹错误】:", error);
       const axiosError = error as any;
       const backendError = axiosError.response?.data || {};
+      const rawDetail = backendError?.detail;
+      const detailMsg = Array.isArray(rawDetail)
+        ? rawDetail.map((e: any) => e?.msg || JSON.stringify(e)).join('; ')
+        : (typeof rawDetail === 'string' ? rawDetail : (rawDetail ? JSON.stringify(rawDetail) : ''));
       return {
         success: false,
-        message: backendError?.detail || axiosError.message || '删除声纹失败',
+        message: detailMsg || axiosError.message || '删除声纹失败',
         detail: JSON.stringify(backendError || axiosError.stack),
         data: {}
       };
