@@ -146,7 +146,17 @@
     "asrFunasr": "本地 FunASR",
     "asrAzure": "Azure ASR",
     "ttsHuoshanDoubleStream": "火山双流式 TTS",
-    "ttsAzure": "Azure TTS"
+    "ttsAzure": "Azure TTS",
+    "ttsVoice": "音色",
+    "ttsVoiceDefault": "默认",
+    "ttsVoiceAdd": "添加",
+    "ttsVoiceDelete": "删除",
+    "ttsVoiceIdPlaceholder": "音色 ID",
+    "ttsVoiceNamePlaceholder": "显示名称（可选）",
+    "ttsVoiceIdRequired": "请填写音色 ID",
+    "ttsVoiceDuplicate": "该音色 ID 已存在",
+    "ttsVoiceHelpAzure": "Azure 音色 ID 形如 zh-CN-YunxiNeural、zh-CN-XiaoyiNeural；可在 Azure Speech Studio → 语音库 复制 voice short name。默认音色不可修改。",
+    "ttsVoiceHelpHuoshan": "火山音色 ID 形如 zh_male_naiqimengwa_mars_bigtts、zh_female_cancan_mars_bigtts；可在火山引擎语音技术控制台复制 speaker ID。选择默认音色时使用现有混合音色（70% 奶气萌娃 + 30% 灿灿），不可修改。"
   },
   "voiceprint": {
     "title": "声纹管理", 

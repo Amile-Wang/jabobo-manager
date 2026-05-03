@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Waves, Book, UserCircle, Brain, RefreshCw, Plus, Settings2, Users, LogOut, Loader2, ChevronLeft, Cpu, X, Mic, Speaker, Trash2 } from 'lucide-react';
+import { Waves, Book, UserCircle, Brain, RefreshCw, Plus, Settings2, Users, LogOut, Loader2, ChevronLeft, Cpu, X, Mic, Speaker, Trash2, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import { Screen, Persona } from '../types';
-import { UserConfig, AsrProvider, TtsProvider } from "@/types";
+import { UserConfig, AsrProvider, TtsProvider, LlmProvider, VoiceOption, DEFAULT_AZURE_VOICE, DEFAULT_HUOSHAN_VOICE } from "@/types";
 import { JaboboConfig } from '../api/jabobo_congfig';
 import dashboadImg from '../assets/dashboad.png'; 
 
@@ -43,6 +43,13 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [newWsUrl, setNewWsUrl] = useState('');
   const [asrProvider, setAsrProvider] = useState<AsrProvider>('');
   const [ttsProvider, setTtsProvider] = useState<TtsProvider>('');
+  const [llmProvider, setLlmProvider] = useState<LlmProvider>('');
+  const [azureVoiceId, setAzureVoiceId] = useState<string>('');
+  const [azureVoiceList, setAzureVoiceList] = useState<VoiceOption[]>([]);
+  const [huoshanVoiceId, setHuoshanVoiceId] = useState<string>('');
+  const [huoshanVoiceList, setHuoshanVoiceList] = useState<VoiceOption[]>([]);
+  const [newVoiceId, setNewVoiceId] = useState('');
+  const [newVoiceName, setNewVoiceName] = useState('');
   const nameInputRef = useRef<HTMLInputElement>(null);
   const newWsUrlInputRef = useRef<HTMLInputElement>(null);
 
@@ -134,6 +141,11 @@ const Dashboard: React.FC<DashboardProps> = ({
         setWsUrlList(merged);
         setAsrProvider((res.data.asr_provider as AsrProvider) || '');
         setTtsProvider((res.data.tts_provider as TtsProvider) || '');
+        setLlmProvider((res.data.llm_provider as LlmProvider) || '');
+        setAzureVoiceId(res.data.azure_tts_voice_id || '');
+        setAzureVoiceList(Array.isArray(res.data.azure_tts_voice_list) ? res.data.azure_tts_voice_list : []);
+        setHuoshanVoiceId(res.data.huoshan_tts_voice_id || '');
+        setHuoshanVoiceList(Array.isArray(res.data.huoshan_tts_voice_list) ? res.data.huoshan_tts_voice_list : []);
         console.log('从接口读取的版本号：', { current_version: cv, expected_version: ev });
       }
     } catch (err) { console.error('获取配置失败：', err); }
@@ -184,7 +196,12 @@ const Dashboard: React.FC<DashboardProps> = ({
         websocket_url: trimmedWs,
         websocket_url_list: dedupList,
         asr_provider: asrProvider,
-        tts_provider: ttsProvider
+        tts_provider: ttsProvider,
+        llm_provider: llmProvider,
+        azure_tts_voice_id: azureVoiceId,
+        azure_tts_voice_list: azureVoiceList,
+        huoshan_tts_voice_id: huoshanVoiceId,
+        huoshan_tts_voice_list: huoshanVoiceList,
       };
       
       const res = await JaboboConfig.syncConfig(jaboboId, payload);
@@ -231,6 +248,57 @@ const Dashboard: React.FC<DashboardProps> = ({
     localStorage.removeItem('user');
     localStorage.removeItem('active_jabobo_uuid');
     onNavigate('LOGIN');
+  };
+
+  // —— TTS 音色管理 ——
+  // tts_provider 为空时（老记录 NULL）后端按 huoshan 兜底，UI 也跟着兜底，
+  // 否则 select 视觉上显示第一项但 state 仍是 '' 会导致音色卡整块不渲染。
+  const effectiveTtsProvider: TtsProvider =
+    ttsProvider === 'azure_tts' ? 'azure_tts' : 'huoshan_double_stream';
+  const isAzure = effectiveTtsProvider === 'azure_tts';
+  const isHuoshan = effectiveTtsProvider === 'huoshan_double_stream';
+  const defaultVoice = isAzure ? DEFAULT_AZURE_VOICE : DEFAULT_HUOSHAN_VOICE;
+  const customVoiceList = isAzure ? azureVoiceList : isHuoshan ? huoshanVoiceList : [];
+  const selectedVoiceId = isAzure ? azureVoiceId : isHuoshan ? huoshanVoiceId : '';
+  // 全部展示项 = [默认] + 自定义；若选中 ID 不在列表里（含默认），回退到默认
+  const allVoiceItems: VoiceOption[] = defaultVoice ? [defaultVoice, ...customVoiceList] : [];
+  const effectiveSelectedId = (() => {
+    if (!defaultVoice) return '';
+    if (!selectedVoiceId) return defaultVoice.id;
+    return allVoiceItems.some(v => v.id === selectedVoiceId) ? selectedVoiceId : defaultVoice.id;
+  })();
+
+  const setSelectedVoice = (id: string) => {
+    if (isAzure) setAzureVoiceId(id);
+    else if (isHuoshan) setHuoshanVoiceId(id);
+  };
+  const setCustomVoiceList = (next: VoiceOption[]) => {
+    if (isAzure) setAzureVoiceList(next);
+    else if (isHuoshan) setHuoshanVoiceList(next);
+  };
+
+  const handleAddVoice = () => {
+    if (!defaultVoice) return;
+    const id = newVoiceId.trim();
+    const name = newVoiceName.trim();
+    if (!id) {
+      alert(t('dashboard.ttsVoiceIdRequired'));
+      return;
+    }
+    if (id === defaultVoice.id || allVoiceItems.some(v => v.id === id)) {
+      alert(t('dashboard.ttsVoiceDuplicate'));
+      return;
+    }
+    setCustomVoiceList([...customVoiceList, { id, name: name || id }]);
+    setNewVoiceId('');
+    setNewVoiceName('');
+  };
+
+  const handleRemoveVoice = (id: string) => {
+    if (!defaultVoice) return;
+    const next = customVoiceList.filter(v => v.id !== id);
+    setCustomVoiceList(next);
+    if (selectedVoiceId === id) setSelectedVoice(defaultVoice.id);
   };
 
   if (!currentUser) return null;
@@ -448,6 +516,93 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <option value="azure_tts">{t('dashboard.ttsAzure')}</option>
               </select>
             </div>
+          </div>
+
+          {defaultVoice && (
+            <div className="mt-4 bg-gray-50 rounded-2xl p-4">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-1">
+                <Speaker size={10} /> {t('dashboard.ttsVoice')}
+              </label>
+              <div className="space-y-2">
+                {allVoiceItems.map((v, idx) => {
+                  const isDefault = idx === 0;
+                  const checked = effectiveSelectedId === v.id;
+                  return (
+                    <div key={v.id} className="flex items-center gap-2 bg-white rounded-xl px-3 py-2">
+                      <input
+                        type="radio"
+                        name="tts-voice"
+                        checked={checked}
+                        onChange={() => setSelectedVoice(v.id)}
+                        className="cursor-pointer"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-gray-700 truncate">{v.name}</div>
+                        <div className="text-[10px] font-mono text-gray-400 truncate">{v.id}</div>
+                      </div>
+                      {isDefault ? (
+                        <span className="text-[10px] font-black uppercase tracking-widest text-yellow-500 bg-yellow-50 px-2 py-1 rounded-full">
+                          {t('dashboard.ttsVoiceDefault')}
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveVoice(v.id)}
+                          className="text-gray-300 hover:text-red-500 transition-colors"
+                          aria-label={t('dashboard.ttsVoiceDelete')}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2">
+                <input
+                  type="text"
+                  value={newVoiceId}
+                  onChange={(e) => setNewVoiceId(e.target.value)}
+                  placeholder={t('dashboard.ttsVoiceIdPlaceholder')}
+                  className="bg-white rounded-xl px-3 py-2 text-sm text-gray-700 focus:outline-none"
+                />
+                <input
+                  type="text"
+                  value={newVoiceName}
+                  onChange={(e) => setNewVoiceName(e.target.value)}
+                  placeholder={t('dashboard.ttsVoiceNamePlaceholder')}
+                  className="bg-white rounded-xl px-3 py-2 text-sm text-gray-700 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddVoice}
+                  className="bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-black uppercase tracking-widest rounded-xl px-4 py-2 transition-colors"
+                >
+                  {t('dashboard.ttsVoiceAdd')}
+                </button>
+              </div>
+
+              <p className="mt-2 text-[10px] text-gray-400 leading-relaxed">
+                {isAzure ? t('dashboard.ttsVoiceHelpAzure') : t('dashboard.ttsVoiceHelpHuoshan')}
+              </p>
+            </div>
+          )}
+
+          <div className="mt-4">
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+              <Sparkles size={10} /> LLM
+            </label>
+            <select
+              value={llmProvider}
+              onChange={(e) => setLlmProvider(e.target.value as LlmProvider)}
+              className="w-full bg-gray-50 rounded-2xl p-4 text-sm text-gray-600 focus:outline-none cursor-pointer"
+            >
+              <option value="">默认（Qwen Turbo）</option>
+              <option value="qwen-turbo">Qwen Turbo</option>
+              <option value="deepseek-v4-flash">DeepSeek v4 Flash</option>
+              <option value="gpt-5.4-nano">GPT-5.4 Nano</option>
+            </select>
           </div>
         </div>
       </div>

@@ -113,6 +113,22 @@ export interface User {
  */
 export type AsrProvider = '' | 'funasr' | 'azure_asr';
 export type TtsProvider = '' | 'huoshan_double_stream' | 'azure_tts';
+export type LlmProvider = '' | 'qwen-turbo' | 'deepseek-v4-flash' | 'gpt-5.4-nano';
+
+export interface VoiceOption {
+  id: string;
+  name: string;
+}
+
+// 内置默认音色，前端展示用，不写入 DB；后端在 voice_id 为空时套用同一 ID。
+export const DEFAULT_AZURE_VOICE: VoiceOption = {
+  id: 'zh-CN-XiaoxiaoNeural',
+  name: '晓晓（默认）',
+};
+export const DEFAULT_HUOSHAN_VOICE: VoiceOption = {
+  id: 'custom_mix_bigtts',
+  name: '混合音色（默认）',
+};
 
 export interface UserConfig {
   persona: string;
@@ -125,6 +141,11 @@ export interface UserConfig {
   websocket_url_list?: string[];
   asr_provider?: AsrProvider;
   tts_provider?: TtsProvider;
+  llm_provider?: LlmProvider;
+  azure_tts_voice_id?: string;
+  azure_tts_voice_list?: VoiceOption[];
+  huoshan_tts_voice_id?: string;
+  huoshan_tts_voice_list?: VoiceOption[];
 }
 
 /**

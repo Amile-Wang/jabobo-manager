@@ -127,7 +127,17 @@
     "asrFunasr": "Local FunASR",
     "asrAzure": "Azure ASR",
     "ttsHuoshanDoubleStream": "Huoshan DoubleStream TTS",
-    "ttsAzure": "Azure TTS"
+    "ttsAzure": "Azure TTS",
+    "ttsVoice": "Voice",
+    "ttsVoiceDefault": "Default",
+    "ttsVoiceAdd": "Add",
+    "ttsVoiceDelete": "Remove",
+    "ttsVoiceIdPlaceholder": "Voice ID",
+    "ttsVoiceNamePlaceholder": "Display name (optional)",
+    "ttsVoiceIdRequired": "Voice ID is required",
+    "ttsVoiceDuplicate": "This voice ID already exists",
+    "ttsVoiceHelpAzure": "Azure voice IDs look like zh-CN-YunxiNeural or en-US-JennyNeural — copy the voice short name from Azure Speech Studio → Voice Gallery. The default voice is not editable.",
+    "ttsVoiceHelpHuoshan": "Huoshan voice IDs look like zh_male_naiqimengwa_mars_bigtts or zh_female_cancan_mars_bigtts — copy the speaker ID from the Volcano Engine Speech console. The default uses the existing mix (70% naiqimengwa + 30% cancan) and is not editable."
   },
   "voiceprint": {
     "title": "Voiceprint Management",
