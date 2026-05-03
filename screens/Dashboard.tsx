@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Waves, Book, UserCircle, Brain, RefreshCw, Plus, Settings2, Users, LogOut, Loader2, ChevronLeft, Cpu, X, Mic, Speaker, Trash2, Sparkles } from 'lucide-react';
+import { Waves, Book, UserCircle, Brain, RefreshCw, Plus, Settings2, Users, LogOut, Loader2, ChevronLeft, Cpu, X, Mic, Speaker, Trash2, Sparkles, Download } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import { Screen, Persona } from '../types';
 import { UserConfig, AsrProvider, TtsProvider, LlmProvider, VoiceOption, DEFAULT_AZURE_VOICE, DEFAULT_HUOSHAN_VOICE } from "@/types";
 import { JaboboConfig } from '../api/jabobo_congfig';
-import dashboadImg from '../assets/dashboad.png'; 
+import { jaboboManager } from '../api/jabobo_manager';
+import dashboadImg from '../assets/dashboad.png';
 
 interface DashboardProps {
   jaboboId: string; 
@@ -36,7 +37,9 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [editingPersonaId, setEditingPersonaId] = useState<string | null>(null);
   const [tempPersonaName, setTempPersonaName] = useState('');
   const [currentVersion, setCurrentVersion] = useState('1.0.0');
-  const [expectedVersion, setExpectedVersion] = useState('1.0.0');
+  const [expectedVersion, setExpectedVersion] = useState('');
+  const [firmwareList, setFirmwareList] = useState<{ filename: string; version: string | null; size: number }[]>([]);
+  const [firmwareSaving, setFirmwareSaving] = useState(false);
   const [wsUrl, setWsUrl] = useState('');
   const [wsUrlList, setWsUrlList] = useState<string[]>([]);
   const [showWsUrlAdder, setShowWsUrlAdder] = useState(false);
@@ -68,10 +71,9 @@ const Dashboard: React.FC<DashboardProps> = ({
     return 0;
   };
 
-  // 修正2：版本号比较逻辑（关键！写反的地方）
-  // 正确逻辑：预期版本 > 当前版本 时显示new
-  const showNewBadge = compareVersion(expectedVersion, currentVersion) === 1;
-  const isVersionMismatch = currentVersion !== expectedVersion;
+  // expected_version 为空串表示"不升级"，不应显示 new badge / mismatch
+  const showNewBadge = !!expectedVersion && compareVersion(expectedVersion, currentVersion) === 1;
+  const isVersionMismatch = !!expectedVersion && currentVersion !== expectedVersion;
 
   // 修正3：新增调试日志（便于排查版本号值的问题）
   useEffect(() => {
@@ -106,6 +108,38 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [showWsUrlAdder]);
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await jaboboManager.listFirmwares();
+        if (res.success && Array.isArray(res.data)) {
+          setFirmwareList(res.data);
+        }
+      } catch (err) {
+        console.error('获取固件列表失败：', err);
+      }
+    })();
+  }, []);
+
+  const handleSaveExpectedVersion = async (target: string) => {
+    if (firmwareSaving) return;
+    if (target === expectedVersion) return;
+    setFirmwareSaving(true);
+    try {
+      const res = await jaboboManager.setExpectedVersion(jaboboId, target);
+      if (res.success) {
+        setExpectedVersion(target);
+      } else {
+        alert(t('dashboard.firmwareUpdateFailed', { defaultValue: '设置目标版本失败' }));
+      }
+    } catch (err: any) {
+      console.error('设置目标版本失败：', err);
+      alert(err?.response?.data?.detail || err?.message || t('dashboard.firmwareUpdateFailed', { defaultValue: '设置目标版本失败' }));
+    } finally {
+      setFirmwareSaving(false);
+    }
+  };
+
   const fetchServerConfig = async () => {
     try {
       const res = await JaboboConfig.getUserConfig(jaboboId);
@@ -126,9 +160,9 @@ const Dashboard: React.FC<DashboardProps> = ({
         setMemory(res.data.memory || '');
         setVoiceStatus(res.data.voice_status || t('dashboard.ready'));
         setKbStatus(res.data.kb_status || t('dashboard.synced'));
-        // 修正4：确保版本号从接口正确读取（添加日志）
+        // expected_version 空串 = "不下发升级"，前端不再兜底成 1.0.0
         const cv = res.data.current_version || '1.0.0';
-        const ev = res.data.expected_version || '1.0.0';
+        const ev = typeof res.data.expected_version === 'string' ? res.data.expected_version : '';
         setCurrentVersion(cv);
         setExpectedVersion(ev);
         const savedWs = res.data.websocket_url || '';
@@ -350,6 +384,40 @@ const Dashboard: React.FC<DashboardProps> = ({
             <img src={dashboadImg} alt={t('dashboard.mascot')} className="w-full h-full object-contain" />
           </div>
           <div className="absolute bottom-[-10px] left-1/2 -translate-x-1/2 bg-yellow-400 text-gray-900 px-6 py-1 rounded-full font-black text-sm shadow-md uppercase">Jabobo</div>
+        </div>
+
+        {/* 固件目标版本选择：空串=不升级（默认） */}
+        <div className="w-full bg-gray-50 rounded-2xl p-4 mt-2">
+          <div className="flex items-center mb-3 text-gray-800">
+            <Download size={16} className="mr-2 text-yellow-500" />
+            <h3 className="font-bold text-sm">{t('dashboard.firmwareTarget', { defaultValue: '固件目标版本' })}</h3>
+            {firmwareSaving && <Loader2 className="animate-spin ml-2 text-gray-400" size={14} />}
+          </div>
+          <p className="text-[10px] text-gray-500 mb-3 leading-relaxed">
+            {t('dashboard.firmwareHint', {
+              defaultValue: '选择"不升级"时设备保持当前版本；选择具体版本后，下次设备 OTA 检查时会被通知升级。'
+            })}
+          </p>
+          <select
+            value={expectedVersion}
+            disabled={firmwareSaving}
+            onChange={(e) => handleSaveExpectedVersion(e.target.value)}
+            className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold focus:ring-2 focus:ring-yellow-400 focus:outline-none disabled:opacity-50"
+          >
+            <option value="">{t('dashboard.firmwareNone', { defaultValue: '不升级（默认）' })}</option>
+            {firmwareList
+              .filter(f => f.version !== null && f.version !== '')
+              .map(f => (
+                <option key={f.filename} value={f.version as string}>
+                  {f.version}{currentVersion === f.version ? ` · ${t('dashboard.firmwareCurrent', { defaultValue: '当前' })}` : ''}{` (${(f.size / 1024 / 1024).toFixed(2)} MB)`}
+                </option>
+              ))}
+          </select>
+          {expectedVersion && !firmwareList.some(f => f.version === expectedVersion) && (
+            <p className="text-[10px] text-red-500 mt-2 font-bold">
+              ⚠️ {t('dashboard.firmwareMissing', { defaultValue: '当前目标版本在服务端 OTA 目录中不存在，设备不会升级。' })}（{expectedVersion}）
+            </p>
+          )}
         </div>
       </div>
 

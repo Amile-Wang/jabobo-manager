@@ -41,6 +41,20 @@ export const JaboboManager = {
       return response.data;
     },
 
+    // 列出 OTA 目录里所有可下发的固件版本
+    listFirmwares: async (): Promise<ApiResponse> => {
+      const response = await apiClient.get('/xiaozhi/otaMag/list');
+      return response.data;
+    },
+
+    // 设置设备的目标固件版本；传空串/null 表示不下发升级（默认行为）
+    setExpectedVersion: async (jaboboId: string, expectedVersion: string): Promise<ApiResponse> => {
+      const response = await apiClient.put('/user/device/update_version', null, {
+        params: { jabobo_id: jaboboId, expected_version: expectedVersion },
+      });
+      return response.data;
+    },
+
   };
   
   // 别名导出，确保兼容性
