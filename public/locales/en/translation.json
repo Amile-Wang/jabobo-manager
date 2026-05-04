@@ -106,6 +106,8 @@
     "memoryPlaceholder": "Please enter device memory content...",
     "voiceprintSettings": "Voiceprint Settings",
     "knowledgeBase": "Knowledge Base",
+    "ragEnabled": "Use knowledge base in chat",
+    "ragEnabledHelp": "When enabled, the device retrieves from this device's knowledge base for every utterance. Disable to reduce latency. Does not affect knowledge base upload/management.",
     "syncing": "Syncing...",
     "syncToDevice": "Sync Config to Device",
     "settings": "Settings",

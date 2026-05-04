@@ -125,6 +125,8 @@
     "memoryPlaceholder": "请输入设备记忆内容...",
     "voiceprintSettings": "声纹设置",
     "knowledgeBase": "知识库",
+    "ragEnabled": "对话使用知识库",
+    "ragEnabledHelp": "开启后，设备每次说话都会检索本设备的知识库；关闭可减少响应延迟，不影响知识库上传/管理。",
     "syncing": "同步中...",
     "syncToDevice": "同步配置到设备",
     "settings": "设置",

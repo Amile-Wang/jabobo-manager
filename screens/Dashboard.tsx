@@ -38,6 +38,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [tempPersonaName, setTempPersonaName] = useState('');
   const [currentVersion, setCurrentVersion] = useState('1.0.0');
   const [expectedVersion, setExpectedVersion] = useState('');
+  const [forceInstall, setForceInstall] = useState(false);
   const [firmwareList, setFirmwareList] = useState<{ filename: string; version: string | null; size: number }[]>([]);
   const [firmwareSaving, setFirmwareSaving] = useState(false);
   const [wsUrl, setWsUrl] = useState('');
@@ -51,6 +52,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [azureVoiceList, setAzureVoiceList] = useState<VoiceOption[]>([]);
   const [huoshanVoiceId, setHuoshanVoiceId] = useState<string>('');
   const [huoshanVoiceList, setHuoshanVoiceList] = useState<VoiceOption[]>([]);
+  const [ragEnabled, setRagEnabled] = useState<boolean>(false);
   const [newVoiceId, setNewVoiceId] = useState('');
   const [newVoiceName, setNewVoiceName] = useState('');
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -140,6 +142,25 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+  const handleSaveForceInstall = async (next: boolean) => {
+    if (firmwareSaving) return;
+    if (next === forceInstall) return;
+    setFirmwareSaving(true);
+    try {
+      const res = await jaboboManager.setForceInstall(jaboboId, next);
+      if (res.success) {
+        setForceInstall(next);
+      } else {
+        alert(t('dashboard.firmwareForceFailed', { defaultValue: '设置强制安装失败' }));
+      }
+    } catch (err: any) {
+      console.error('设置强制安装失败：', err);
+      alert(err?.response?.data?.detail || err?.message || t('dashboard.firmwareForceFailed', { defaultValue: '设置强制安装失败' }));
+    } finally {
+      setFirmwareSaving(false);
+    }
+  };
+
   const fetchServerConfig = async () => {
     try {
       const res = await JaboboConfig.getUserConfig(jaboboId);
@@ -165,6 +186,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         const ev = typeof res.data.expected_version === 'string' ? res.data.expected_version : '';
         setCurrentVersion(cv);
         setExpectedVersion(ev);
+        setForceInstall(Number(res.data.force_install) === 1);
         const savedWs = res.data.websocket_url || '';
         setWsUrl(savedWs);
         const rawList = Array.isArray(res.data.websocket_url_list) ? res.data.websocket_url_list : [];
@@ -180,6 +202,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         setAzureVoiceList(Array.isArray(res.data.azure_tts_voice_list) ? res.data.azure_tts_voice_list : []);
         setHuoshanVoiceId(res.data.huoshan_tts_voice_id || '');
         setHuoshanVoiceList(Array.isArray(res.data.huoshan_tts_voice_list) ? res.data.huoshan_tts_voice_list : []);
+        setRagEnabled(!!res.data.rag_enabled);
         console.log('从接口读取的版本号：', { current_version: cv, expected_version: ev });
       }
     } catch (err) { console.error('获取配置失败：', err); }
@@ -236,6 +259,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         azure_tts_voice_list: azureVoiceList,
         huoshan_tts_voice_id: huoshanVoiceId,
         huoshan_tts_voice_list: huoshanVoiceList,
+        rag_enabled: ragEnabled,
       };
       
       const res = await JaboboConfig.syncConfig(jaboboId, payload);
@@ -418,6 +442,24 @@ const Dashboard: React.FC<DashboardProps> = ({
               ⚠️ {t('dashboard.firmwareMissing', { defaultValue: '当前目标版本在服务端 OTA 目录中不存在，设备不会升级。' })}（{expectedVersion}）
             </p>
           )}
+          <label className={`flex items-start mt-3 ${expectedVersion ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}>
+            <input
+              type="checkbox"
+              checked={forceInstall}
+              disabled={firmwareSaving || !expectedVersion}
+              onChange={(e) => handleSaveForceInstall(e.target.checked)}
+              className="mt-0.5 mr-2 accent-yellow-500"
+            />
+            <span className="text-[11px] text-gray-700 leading-relaxed">
+              <span className="font-bold">{t('dashboard.firmwareForce', { defaultValue: '强制安装该版本（允许回退）' })}</span>
+              <br />
+              <span className="text-[10px] text-gray-500">
+                {t('dashboard.firmwareForceHint', {
+                  defaultValue: '勾选后下发 force=1，固件端跳过"高版本才升级"的判断；可用于回退到低版本。仅当目标版本与当前版本号完全相同时仍会被固件跳过。'
+                })}
+              </span>
+            </span>
+          </label>
         </div>
       </div>
 
@@ -696,7 +738,27 @@ const Dashboard: React.FC<DashboardProps> = ({
           <span className="text-[9px] text-gray-300 mt-1 font-bold uppercase tracking-widest">Voice</span>
         </button>
 
-        <button onClick={() => onNavigate('KNOWLEDGE_BASE')} className="bg-white p-6 rounded-[28px] shadow-sm flex flex-col items-center hover:shadow-md transition-all active:scale-95 border border-white">
+        <button onClick={() => onNavigate('KNOWLEDGE_BASE')} className="relative bg-white p-6 rounded-[28px] shadow-sm flex flex-col items-center hover:shadow-md transition-all active:scale-95 border border-white">
+          <span
+            role="switch"
+            aria-checked={ragEnabled}
+            aria-label={t('dashboard.ragEnabled')}
+            title={t('dashboard.ragEnabledHelp')}
+            tabIndex={0}
+            onClick={(e) => { e.stopPropagation(); setRagEnabled(v => !v); }}
+            onKeyDown={(e) => {
+              if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                setRagEnabled(v => !v);
+              }
+            }}
+            className={`absolute top-3 right-3 inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors cursor-pointer ${ragEnabled ? 'bg-yellow-400' : 'bg-gray-200'}`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${ragEnabled ? 'translate-x-[18px]' : 'translate-x-0.5'}`}
+            />
+          </span>
           <div className="w-12 h-12 bg-purple-50 text-purple-500 rounded-2xl flex items-center justify-center mb-3">
             <Book size={24} />
           </div>

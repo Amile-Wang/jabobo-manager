@@ -55,6 +55,14 @@ export const JaboboManager = {
       return response.data;
     },
 
+    // 设置/清除强制安装标志：1=固件端绕过版本号大于比较强制刷写（用于回退或同版本重刷），0=遵循升级语义
+    setForceInstall: async (jaboboId: string, forceInstall: boolean): Promise<ApiResponse> => {
+      const response = await apiClient.put('/user/device/update_version', null, {
+        params: { jabobo_id: jaboboId, force_install: forceInstall ? 1 : 0 },
+      });
+      return response.data;
+    },
+
   };
   
   // 别名导出，确保兼容性

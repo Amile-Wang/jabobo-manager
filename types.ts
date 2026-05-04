@@ -137,6 +137,7 @@ export interface UserConfig {
   kb_status: string;
   current_version: string;
   expected_version: string;
+  force_install?: number;
   websocket_url?: string;
   websocket_url_list?: string[];
   asr_provider?: AsrProvider;
@@ -146,6 +147,7 @@ export interface UserConfig {
   azure_tts_voice_list?: VoiceOption[];
   huoshan_tts_voice_id?: string;
   huoshan_tts_voice_list?: VoiceOption[];
+  rag_enabled?: boolean;
 }
 
 /**
