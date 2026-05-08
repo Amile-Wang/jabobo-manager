@@ -64,7 +64,7 @@ apiClient.interceptors.response.use(
       // 3. 只有非登录接口的 401 才执行登出跳转
       if (!isLoginRequest) {
         localStorage.removeItem('user');
-        window.location.href = '/app';
+        window.location.href = '/jabobo/app';
       }
     }
     console.error('===== apiClient 响应拦截器错误 =====', error);

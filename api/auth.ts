@@ -15,8 +15,8 @@ export const authApi = {
       // 后端直接返回 {"success": true, "token": "...", ...}
       return response.data; 
     } catch (error: any) {
-      // 提取 FastAPI raise HTTPException 时返回的 detail 错误信息
-      const message = error.response?.data?.detail || '无法连接到服务器';
+      // Surface FastAPI HTTPException detail; otherwise let the caller's t() fallback take over
+      const message = error.response?.data?.detail || '';
       throw new Error(message);
     }
   }

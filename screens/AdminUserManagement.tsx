@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { UserPlus, Trash2, ChevronLeft, Loader2, RefreshCw, Key } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Screen } from '../types';
 import { userManagementApi, User } from '../api/user';
 
@@ -8,18 +9,17 @@ interface AdminProps {
 }
 
 const AdminUserManagement: React.FC<AdminProps> = ({ onNavigate }) => {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  
-  // 表单状态
+
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState('User');
 
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
-  // 1. 刷新用户列表
   const fetchUsers = async () => {
     setLoading(true);
     try {
@@ -27,10 +27,10 @@ const AdminUserManagement: React.FC<AdminProps> = ({ onNavigate }) => {
       if (result.success && result.data) {
         setUsers(result.data);
       } else {
-        alert(result.detail || '获取失败');
+        alert(result.detail || t('admin.alertFetchFailed'));
       }
     } catch (err: any) {
-      alert(err.message || '无法连接到服务器');
+      alert(err.message || t('admin.alertNetwork'));
     } finally {
       setLoading(false);
     }
@@ -40,7 +40,6 @@ const AdminUserManagement: React.FC<AdminProps> = ({ onNavigate }) => {
     fetchUsers();
   }, []);
 
-  // 2. 处理创建用户
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setActionLoading('create');
@@ -54,20 +53,21 @@ const AdminUserManagement: React.FC<AdminProps> = ({ onNavigate }) => {
         setNewUsername('');
         setNewPassword('');
         fetchUsers();
+      } else {
+        alert(res.detail || t('admin.alertCreateFailed'));
       }
     } catch (err: any) {
-      alert(err.message);
+      alert(err.message || t('admin.alertCreateFailed'));
     } finally {
       setActionLoading(null);
     }
   };
 
-  // 3. 处理管理员修改密码
   const handleResetPassword = async (targetUsername: string) => {
-    const newPwd = window.prompt(`请输入用户 "${targetUsername}" 的新密码:`);
+    const newPwd = window.prompt(t('admin.promptNewPassword', { username: targetUsername }));
     if (!newPwd) return;
     if (newPwd.length < 6) {
-      alert("密码长度不能少于6位");
+      alert(t('admin.alertPasswordTooShort'));
       return;
     }
 
@@ -77,24 +77,25 @@ const AdminUserManagement: React.FC<AdminProps> = ({ onNavigate }) => {
         username: targetUsername,
         new_password: newPwd
       });
-      if (res.success) alert(`用户 ${targetUsername} 的密码修改成功！`);
+      if (res.success) alert(t('admin.alertResetSuccess', { username: targetUsername }));
+      else alert(res.detail || t('admin.alertResetFailed'));
     } catch (err: any) {
-      alert(err.message);
+      alert(err.message || t('admin.alertResetFailed'));
     } finally {
       setActionLoading(null);
     }
   };
 
-  // 4. 处理删除用户
   const handleDeleteUser = async (targetUsername: string) => {
-    if (!window.confirm(`确认删除用户 ${targetUsername}？此操作不可撤销。`)) return;
-    
+    if (!window.confirm(t('admin.confirmDelete', { username: targetUsername }))) return;
+
     setActionLoading(targetUsername);
     try {
       const res = await userManagementApi.deleteUser(targetUsername);
       if (res.success) fetchUsers();
+      else alert(res.detail || t('admin.alertDeleteFailed'));
     } catch (err: any) {
-      alert(err.message);
+      alert(err.message || t('admin.alertDeleteFailed'));
     } finally {
       setActionLoading(null);
     }
@@ -102,85 +103,83 @@ const AdminUserManagement: React.FC<AdminProps> = ({ onNavigate }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8 font-sans">
-      {/* 顶部导航 */}
       <div className="max-w-6xl mx-auto flex items-center justify-between mb-8">
-        <button 
+        <button
           onClick={() => onNavigate('DASHBOARD')}
           className="flex items-center text-gray-500 hover:text-gray-900 font-bold text-xs uppercase tracking-widest transition-colors"
         >
-          <ChevronLeft size={16} className="mr-1" /> 返回首页
+          <ChevronLeft size={16} className="mr-1" /> {t('admin.back')}
         </button>
-        <button 
-          onClick={fetchUsers} 
+        <button
+          onClick={fetchUsers}
           className={`text-gray-400 hover:text-gray-900 transition-all ${loading ? 'animate-spin' : ''}`}
+          aria-label={t('common.refresh')}
         >
           <RefreshCw size={20} />
         </button>
       </div>
 
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* 左侧：新建成员表单 */}
+
         <div className="lg:col-span-1">
           <div className="bg-white rounded-[40px] p-8 shadow-sm border border-gray-100 sticky top-8">
             <div className="flex items-center mb-6 text-gray-900">
               <UserPlus size={24} className="mr-3" />
-              <h2 className="text-xl font-black">新建成员</h2>
+              <h2 className="text-xl font-black">{t('admin.createSection')}</h2>
             </div>
-            
+
             <form onSubmit={handleCreateUser} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">用户名</label>
-                <input 
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">{t('admin.username')}</label>
+                <input
                   value={newUsername}
                   onChange={(e) => setNewUsername(e.target.value)}
                   className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-yellow-400 transition-all"
-                  placeholder="设置登录名"
+                  placeholder={t('admin.usernamePlaceholder')}
                   required
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">初始密码</label>
-                <input 
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">{t('admin.initialPassword')}</label>
+                <input
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-yellow-400 transition-all"
-                  placeholder="最少 6 位"
+                  placeholder={t('admin.passwordPlaceholder')}
                   required
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">权限级别</label>
-                <select 
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">{t('admin.role')}</label>
+                <select
                   value={newRole}
                   onChange={(e) => setNewRole(e.target.value)}
                   className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-yellow-400 transition-all"
                 >
-                  <option value="User">普通用户 (User)</option>
-                  <option value="Admin">管理员 (Admin)</option>
+                  <option value="User">{t('admin.roleUser')}</option>
+                  <option value="Admin">{t('admin.roleAdmin')}</option>
                 </select>
               </div>
-              <button 
+              <button
                 type="submit"
                 disabled={actionLoading === 'create'}
                 className="w-full bg-gray-900 text-yellow-400 py-4 rounded-2xl font-black text-sm mt-4 hover:shadow-xl active:scale-[0.98] transition-all disabled:opacity-50"
               >
-                {actionLoading === 'create' ? '正在创建...' : '确认添加成员'}
+                {actionLoading === 'create' ? t('admin.creating') : t('admin.submitCreate')}
               </button>
             </form>
           </div>
         </div>
 
-        {/* 右侧：用户列表 */}
         <div className="lg:col-span-2">
           <div className="bg-white rounded-[40px] p-2 shadow-sm border border-gray-100 overflow-hidden">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-50">
-                  <th className="text-left py-6 px-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">用户信息</th>
-                  <th className="text-left py-6 px-4 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">角色</th>
-                  <th className="text-right py-6 px-8 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">操作管理</th>
+                  <th className="text-left py-6 px-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{t('admin.tableUserInfo')}</th>
+                  <th className="text-left py-6 px-4 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{t('admin.tableRole')}</th>
+                  <th className="text-right py-6 px-8 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{t('admin.tableActions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -207,23 +206,23 @@ const AdminUserManagement: React.FC<AdminProps> = ({ onNavigate }) => {
                       </span>
                     </td>
                     <td className="py-6 px-8 text-right space-x-1">
-                      {/* 修改密码按钮 */}
-                      <button 
+                      <button
                         onClick={() => handleResetPassword(user.username)}
                         disabled={actionLoading === user.username}
                         className="p-2 text-gray-300 hover:text-yellow-500 transition-colors"
-                        title="修改密码"
+                        title={t('admin.actionResetPassword')}
+                        aria-label={t('admin.actionResetPassword')}
                       >
                         <Key size={18} />
                       </button>
 
-                      {/* 删除按钮：禁止删除当前登录的管理员 */}
                       {user.username !== currentUser.username && (
-                        <button 
+                        <button
                           onClick={() => handleDeleteUser(user.username)}
                           disabled={actionLoading === user.username}
                           className="p-2 text-gray-300 hover:text-red-500 transition-colors"
-                          title="删除成员"
+                          title={t('admin.actionDelete')}
+                          aria-label={t('admin.actionDelete')}
                         >
                           <Trash2 size={18} />
                         </button>

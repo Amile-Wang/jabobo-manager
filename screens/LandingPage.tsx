@@ -1,11 +1,12 @@
 // src/screens/LandingPage.tsx
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 // 导入 Font Awesome 官方图标（安卓/苹果）
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAndroid, faApple } from '@fortawesome/free-brands-svg-icons';
 
-import productImg from '../assets/login.png'; 
+import productImg from '../assets/login.png';
 import '../i18n';
 
 // 下载链接配置（替换为你的真实服务器域名）
@@ -46,19 +47,27 @@ const LandingPage: React.FC = () => {
             </nav>
             {/* 语言切换按钮 */}
             <div className="flex space-x-2">
-              <button 
+              <button
                 onClick={() => changeLanguage('zh')}
                 className={`px-3 py-1 rounded ${i18n.language === 'zh' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-800'}`}
               >
                 {t('language.zh')}
               </button>
-              <button 
+              <button
                 onClick={() => changeLanguage('en')}
                 className={`px-3 py-1 rounded ${i18n.language === 'en' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-800'}`}
               >
                 {t('language.en')}
               </button>
             </div>
+            {/* 进入控制台 */}
+            <Link
+              to="/app/"
+              className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition"
+            >
+              {t('landing.nav.console')}
+              <span className="ml-1">→</span>
+            </Link>
           </div>
         </header>
 
@@ -117,9 +126,9 @@ const LandingPage: React.FC = () => {
             {/* 使用真实产品图 */}
             <div className="relative">
               <div className="w-64 h-64 md:w-80 md:h-80 bg-white rounded-3xl shadow-xl border-8 border-white overflow-hidden transform rotate-3">
-                <img 
-                  src={productImg} 
-                  alt={`${t('landing.brand')} 智能机器人`} 
+                <img
+                  src={productImg}
+                  alt={t('landing.brandAlt')}
                   className="w-full h-full object-contain p-4"
                 />
               </div>

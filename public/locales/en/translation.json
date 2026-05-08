@@ -1,17 +1,18 @@
 {
   "landing": {
     "brand": "Jabobo",
+    "brandAlt": "Jabobo Smart Robot",
     "nav": {
       "product": "Product",
       "safety": "Safety",
       "story": "Story",
-      "support": "Support"
+      "support": "Support",
+      "console": "Console"
     },
     "download": {
       "android": "Download for Android",
       "ios": "Download for iOS"
     },
-    
     "hero": {
       "title1": "Warm Companionship with AI",
       "title2": "Every Childhood",
@@ -83,6 +84,55 @@
     "renameFail": "Rename failed",
     "renameClearHint": "Leave blank to clear the name"
   },
+  "common": {
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "logout": "Sign Out",
+    "save": "Save",
+    "confirm": "Confirm",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "back": "Back",
+    "refresh": "Refresh",
+    "search": "Search",
+    "add": "Add",
+    "edit": "Edit",
+    "name": "Name",
+    "size": "Size",
+    "time": "Time",
+    "status": "Status",
+    "operation": "Operation",
+    "networkError": "Network error, please retry",
+    "serverError": "Server error, please try again later"
+  },
+  "admin": {
+    "back": "Back to Home",
+    "createSection": "New Member",
+    "username": "Username",
+    "usernamePlaceholder": "Set login name",
+    "initialPassword": "Initial Password",
+    "passwordPlaceholder": "At least 6 characters",
+    "role": "Permission Level",
+    "roleUser": "Regular (User)",
+    "roleAdmin": "Administrator (Admin)",
+    "creating": "Creating...",
+    "submitCreate": "Confirm Add Member",
+    "tableUserInfo": "User Info",
+    "tableRole": "Role",
+    "tableActions": "Actions",
+    "actionResetPassword": "Reset Password",
+    "actionDelete": "Delete Member",
+    "promptNewPassword": "Enter new password for user \"{{username}}\":",
+    "alertPasswordTooShort": "Password must be at least 6 characters",
+    "alertResetSuccess": "Password for {{username}} updated successfully!",
+    "confirmDelete": "Delete user {{username}}? This action cannot be undone.",
+    "alertFetchFailed": "Failed to fetch users",
+    "alertNetwork": "Unable to connect to server",
+    "alertCreateFailed": "Create failed",
+    "alertResetFailed": "Failed to reset password",
+    "alertDeleteFailed": "Delete failed"
+  },
   "dashboard": {
     "loading": "Loading...",
     "ready": "Ready",
@@ -114,11 +164,13 @@
     "adminPanel": "Admin Panel",
     "signOut": "Sign Out",
     "version": "Version",
-    "wsUrl": "WebSocket URL",
+    "wsUrl": "Chat server",
     "wsUrlPlaceholder": "Leave blank for default",
-    "wsUrlSelect": "Select WebSocket URL",
+    "wsUrlSelect": "Select chat server",
     "wsUrlDefault": "Default server",
     "wsUrlAddCustom": "Add custom",
+    "wsNamePlaceholder": "Server name (e.g. Production · Beijing)",
+    "wsNameRequired": "Please enter a server name",
     "wsUrlNewPlaceholder": "wss://your.server/ws/xiaozhi/v1/",
     "wsUrlAdd": "Add",
     "wsUrlRemove": "Remove",
@@ -139,7 +191,20 @@
     "ttsVoiceIdRequired": "Voice ID is required",
     "ttsVoiceDuplicate": "This voice ID already exists",
     "ttsVoiceHelpAzure": "Azure voice IDs look like zh-CN-YunxiNeural or en-US-JennyNeural — copy the voice short name from Azure Speech Studio → Voice Gallery. The default voice is not editable.",
-    "ttsVoiceHelpHuoshan": "Huoshan voice IDs look like zh_male_naiqimengwa_mars_bigtts or zh_female_cancan_mars_bigtts — copy the speaker ID from the Volcano Engine Speech console. The default uses the existing mix (70% naiqimengwa + 30% cancan) and is not editable."
+    "ttsVoiceHelpHuoshan": "Huoshan voice IDs look like zh_male_naiqimengwa_mars_bigtts or zh_female_cancan_mars_bigtts — copy the speaker ID from the Volcano Engine Speech console. The default uses the existing mix (70% naiqimengwa + 30% cancan) and is not editable.",
+    "ttsVoiceXiaoxiao": "Xiaoxiao",
+    "ttsVoiceMix": "Mixed Voice",
+    "firmwareTarget": "Firmware Target Version",
+    "firmwareHint": "When set to \"No update\", the device stays on its current version; selecting a specific version notifies the device on its next OTA check.",
+    "firmwareNone": "No update (default)",
+    "firmwareCurrent": "current",
+    "firmwareMissing": "The selected target version does not exist in the server OTA directory; the device will not upgrade.",
+    "firmwareForce": "Force install this version (allow downgrade)",
+    "firmwareForceHint": "When enabled, sends force=1 to skip the firmware's \"only upgrade to higher version\" check; useful for rollback. The firmware still skips when target equals current version.",
+    "firmwareUpdateFailed": "Failed to set target version",
+    "firmwareForceFailed": "Failed to set force install",
+    "llmProvider": "LLM",
+    "llmDefault": "Default (Qwen Turbo)"
   },
   "voiceprint": {
     "title": "Voiceprint Management",
@@ -163,7 +228,8 @@
     },
     "loading": {
       "audioList": "Loading audio list...",
-      "voiceprintList": "Loading voiceprint list..."
+      "voiceprintList": "Loading voiceprint list...",
+      "registeredVoiceprints": "Loading registered voiceprints..."
     },
     "processing": {
       "audio": "Processing Audio...",
@@ -173,6 +239,7 @@
       "inactive": "Inactive",
       "audioLoaded": "Audio Loaded",
       "valid": "Valid",
+      "active": "Active",
       "invalid": "Invalid",
       "registerSuccess": "Voiceprint registered successfully",
       "deleteSuccess": "Voiceprint deleted successfully"
@@ -182,14 +249,14 @@
       "voiceprintLimit": "Maximum 10 voiceprints per device",
       "duplicateName": "Voiceprint name already exists",
       "noRegisteredVoiceprints": "No registered voiceprints yet"
-
     },
     "button": {
       "deleteAudio": "Delete current audio",
       "rememberVoiceprint": "Remember Voiceprint",
       "deleteVoiceprint": "Delete Voiceprint",
       "refreshList": "Refresh List",
-      "registerNew": "Register New Voiceprint"
+      "registerNew": "Register New Voiceprint",
+      "registering": "Registering..."
     },
     "confirm": {
       "deleteAudio": "Are you sure to delete this audio file? It cannot be recovered after deletion!",
@@ -208,14 +275,19 @@
       "unknownError": "Unknown error",
       "deleteAudioFailed": "Failed to delete audio",
       "registerFailed": "Failed to register voiceprint",
+      "registerVoiceprintFailed": "Failed to register voiceprint",
       "deleteVoiceprintFailed": "Failed to delete voiceprint",
+      "deleteVoiceprintRequestFailed": "Voiceprint deletion request failed",
       "voiceprintLimitExceeded": "Voiceprint limit exceeded (max 10 per device)",
       "duplicateVoiceprintName": "Voiceprint name already exists",
       "invalidAudioFormat": "Invalid audio format (only WAV supported)",
       "audioFileTooLarge": "Audio file too large (max 50MB)",
       "audioFileNotFound": "Audio file not found",
       "loadRegisteredVoiceprintsFailed": "Failed to load registered voiceprints",
-      "deleteVoiceprintMissingParams": "Deletion failed: Missing required parameters"
+      "deleteVoiceprintMissingParams": "Deletion failed: Missing required parameters",
+      "emptyJaboboId": "Jabobo device ID is empty",
+      "emptyVoiceprintName": "Please enter a voiceprint name",
+      "noAudioSelected": "Please select an audio file first"
     },
     "log": {
       "emptyJaboboId": "Jabobo ID is empty, aborting voiceprint request",
@@ -324,25 +396,6 @@
     "success": {
       "passwordUpdated": "Password updated successfully!"
     }
-  },
-  "common": {
-    "delete": "Delete",
-    "cancel": "Cancel",
-    "save": "Save",
-    "confirm": "Confirm",
-    "loading": "Loading...",
-    "error": "Error",
-    "success": "Success",
-    "back": "Back",
-    "refresh": "Refresh",
-    "search": "Search",
-    "add": "Add",
-    "edit": "Edit",
-    "name": "Name",
-    "size": "Size",
-    "time": "Time",
-    "status": "Status",
-    "operation": "Operation"
   },
   "language": {
     "zh": "Chinese",

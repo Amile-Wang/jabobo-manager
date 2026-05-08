@@ -59,8 +59,9 @@
           setDevices(res.jabobo_ids.map(id => ({ id, name: null })));
         }
       } catch (err) {
-        console.error(ready ? t("common.networkError") : "网络错误，请重试", err);
-        alert(ready ? t("common.networkError") : "网络错误，请重试");
+        const msg = ready ? t("common.networkError") : "Network error, please retry";
+        console.error(msg, err);
+        alert(msg);
       } finally {
         setIsLoading(false);
       }

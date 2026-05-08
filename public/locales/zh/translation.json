@@ -1,11 +1,13 @@
 {
   "landing": {
     "brand": "捷宝宝 Jabobo",
+    "brandAlt": "捷宝宝智能机器人",
     "nav": {
       "product": "产品",
       "safety": "安全",
       "story": "故事",
-      "support": "支持"
+      "support": "支持",
+      "console": "进入控制台"
     },
     "download": {
       "android": "下载安卓版",
@@ -100,7 +102,36 @@
     "size": "大小",
     "time": "时间",
     "status": "状态",
-    "operation": "操作"
+    "operation": "操作",
+    "networkError": "网络异常，请重试",
+    "serverError": "服务器繁忙，请稍后重试"
+  },
+  "admin": {
+    "back": "返回首页",
+    "createSection": "新建成员",
+    "username": "用户名",
+    "usernamePlaceholder": "设置登录名",
+    "initialPassword": "初始密码",
+    "passwordPlaceholder": "最少 6 位",
+    "role": "权限级别",
+    "roleUser": "普通用户 (User)",
+    "roleAdmin": "管理员 (Admin)",
+    "creating": "正在创建...",
+    "submitCreate": "确认添加成员",
+    "tableUserInfo": "用户信息",
+    "tableRole": "角色",
+    "tableActions": "操作管理",
+    "actionResetPassword": "修改密码",
+    "actionDelete": "删除成员",
+    "promptNewPassword": "请输入用户 \"{{username}}\" 的新密码：",
+    "alertPasswordTooShort": "密码长度不能少于 6 位",
+    "alertResetSuccess": "用户 {{username}} 的密码修改成功！",
+    "confirmDelete": "确认删除用户 {{username}}？此操作不可撤销。",
+    "alertFetchFailed": "获取失败",
+    "alertNetwork": "无法连接到服务器",
+    "alertCreateFailed": "创建失败",
+    "alertResetFailed": "修改密码失败",
+    "alertDeleteFailed": "删除失败"
   },
   "dashboard": {
     "loading": "加载中...",
@@ -133,11 +164,13 @@
     "adminPanel": "管理面板",
     "signOut": "退出登录",
     "version": "版本",
-    "wsUrl": "WebSocket 地址",
+    "wsUrl": "对话服务器",
     "wsUrlPlaceholder": "留空使用默认服务器",
-    "wsUrlSelect": "选择 WebSocket 地址",
+    "wsUrlSelect": "选择对话服务器",
     "wsUrlDefault": "默认服务器",
     "wsUrlAddCustom": "添加自定义",
+    "wsNamePlaceholder": "服务器名字（如：北京生产）",
+    "wsNameRequired": "请填写服务器名字",
     "wsUrlNewPlaceholder": "wss://your.server/ws/xiaozhi/v1/",
     "wsUrlAdd": "添加",
     "wsUrlRemove": "移除",
@@ -158,10 +191,23 @@
     "ttsVoiceIdRequired": "请填写音色 ID",
     "ttsVoiceDuplicate": "该音色 ID 已存在",
     "ttsVoiceHelpAzure": "Azure 音色 ID 形如 zh-CN-YunxiNeural、zh-CN-XiaoyiNeural；可在 Azure Speech Studio → 语音库 复制 voice short name。默认音色不可修改。",
-    "ttsVoiceHelpHuoshan": "火山音色 ID 形如 zh_male_naiqimengwa_mars_bigtts、zh_female_cancan_mars_bigtts；可在火山引擎语音技术控制台复制 speaker ID。选择默认音色时使用现有混合音色（70% 奶气萌娃 + 30% 灿灿），不可修改。"
+    "ttsVoiceHelpHuoshan": "火山音色 ID 形如 zh_male_naiqimengwa_mars_bigtts、zh_female_cancan_mars_bigtts；可在火山引擎语音技术控制台复制 speaker ID。选择默认音色时使用现有混合音色（70% 奶气萌娃 + 30% 灿灿），不可修改。",
+    "ttsVoiceXiaoxiao": "晓晓",
+    "ttsVoiceMix": "混合音色",
+    "firmwareTarget": "固件目标版本",
+    "firmwareHint": "选择\"不升级\"时设备保持当前版本；选择具体版本后，下次设备 OTA 检查时会被通知升级。",
+    "firmwareNone": "不升级（默认）",
+    "firmwareCurrent": "当前",
+    "firmwareMissing": "当前目标版本在服务端 OTA 目录中不存在，设备不会升级。",
+    "firmwareForce": "强制安装该版本（允许回退）",
+    "firmwareForceHint": "勾选后下发 force=1，固件端跳过\"高版本才升级\"的判断；可用于回退到低版本。仅当目标版本与当前版本号完全相同时仍会被固件跳过。",
+    "firmwareUpdateFailed": "设置目标版本失败",
+    "firmwareForceFailed": "设置强制安装失败",
+    "llmProvider": "大语言模型",
+    "llmDefault": "默认（Qwen Turbo）"
   },
   "voiceprint": {
-    "title": "声纹管理", 
+    "title": "声纹管理",
     "backToDashboard": "返回仪表盘",
     "description": "选择一段对话片段来训练捷宝宝的语音识别模型。",
     "label": {
@@ -182,7 +228,8 @@
     },
     "loading": {
       "audioList": "加载音频列表中...",
-      "voiceprintList": "加载声纹列表中..."
+      "voiceprintList": "加载声纹列表中...",
+      "registeredVoiceprints": "加载已注册声纹中..."
     },
     "processing": {
       "audio": "正在处理音频...",
@@ -191,7 +238,9 @@
     "status": {
       "audioLoaded": "音频已加载",
       "valid": "正常",
-      "inactive": "异常", 
+      "active": "正常",
+      "inactive": "异常",
+      "invalid": "无效",
       "registerSuccess": "声纹注册成功",
       "deleteSuccess": "声纹删除成功"
     },
@@ -199,14 +248,15 @@
       "selectFile": "选择一个文件...",
       "voiceprintLimit": "每个设备最多支持10个声纹",
       "duplicateName": "声纹名称已存在",
-      "noRegisteredVoiceprints": "暂无已注册的声纹" 
+      "noRegisteredVoiceprints": "暂无已注册的声纹"
     },
     "button": {
       "deleteAudio": "删除当前音频",
       "rememberVoiceprint": "记住该声纹",
       "deleteVoiceprint": "删除声纹",
       "refreshList": "刷新列表",
-      "registerNew": "注册新声纹"
+      "registerNew": "注册新声纹",
+      "registering": "注册中..."
     },
     "confirm": {
       "deleteAudio": "确定要删除这个音频文件吗？删除后无法恢复！",
@@ -225,14 +275,19 @@
       "unknownError": "未知错误",
       "deleteAudioFailed": "删除音频失败",
       "registerFailed": "声纹注册失败",
+      "registerVoiceprintFailed": "声纹注册失败",
       "deleteVoiceprintFailed": "声纹删除失败",
+      "deleteVoiceprintRequestFailed": "删除声纹请求失败",
       "voiceprintLimitExceeded": "声纹数量已达上限（最多10个）",
       "duplicateVoiceprintName": "声纹名称已存在，请更换名称",
       "invalidAudioFormat": "不支持的音频格式（仅支持WAV）",
       "audioFileTooLarge": "音频文件过大（最大50MB）",
       "audioFileNotFound": "音频文件不存在",
       "loadRegisteredVoiceprintsFailed": "加载已注册声纹列表失败",
-      "deleteVoiceprintMissingParams": "删除失败：缺少必要的参数"
+      "deleteVoiceprintMissingParams": "删除失败：缺少必要的参数",
+      "emptyJaboboId": "Jabobo 设备 ID 为空，无法继续",
+      "emptyVoiceprintName": "请填写声纹名称",
+      "noAudioSelected": "请先选择音频"
     },
     "log": {
       "emptyJaboboId": "Jabobo ID为空，终止声纹请求",

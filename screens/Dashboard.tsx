@@ -2,8 +2,9 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Waves, Book, UserCircle, Brain, RefreshCw, Plus, Settings2, Users, LogOut, Loader2, ChevronLeft, Cpu, X, Mic, Speaker, Trash2, Sparkles, Download } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import { Screen, Persona } from '../types';
-import { UserConfig, AsrProvider, TtsProvider, LlmProvider, VoiceOption, DEFAULT_AZURE_VOICE, DEFAULT_HUOSHAN_VOICE } from "@/types";
+import { UserConfig, AsrProvider, TtsProvider, LlmProvider, VoiceOption, WsServerEntry, DEFAULT_AZURE_VOICE, DEFAULT_HUOSHAN_VOICE } from "@/types";
 import { JaboboConfig } from '../api/jabobo_congfig';
 import { jaboboManager } from '../api/jabobo_manager';
 import dashboadImg from '../assets/dashboad.png';
@@ -42,9 +43,10 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [firmwareList, setFirmwareList] = useState<{ filename: string; version: string | null; size: number }[]>([]);
   const [firmwareSaving, setFirmwareSaving] = useState(false);
   const [wsUrl, setWsUrl] = useState('');
-  const [wsUrlList, setWsUrlList] = useState<string[]>([]);
+  const [wsUrlList, setWsUrlList] = useState<WsServerEntry[]>([]);
   const [showWsUrlAdder, setShowWsUrlAdder] = useState(false);
   const [newWsUrl, setNewWsUrl] = useState('');
+  const [newWsName, setNewWsName] = useState('');
   const [asrProvider, setAsrProvider] = useState<AsrProvider>('');
   const [ttsProvider, setTtsProvider] = useState<TtsProvider>('');
   const [llmProvider, setLlmProvider] = useState<LlmProvider>('');
@@ -132,11 +134,11 @@ const Dashboard: React.FC<DashboardProps> = ({
       if (res.success) {
         setExpectedVersion(target);
       } else {
-        alert(t('dashboard.firmwareUpdateFailed', { defaultValue: '设置目标版本失败' }));
+        alert(t('dashboard.firmwareUpdateFailed'));
       }
     } catch (err: any) {
-      console.error('设置目标版本失败：', err);
-      alert(err?.response?.data?.detail || err?.message || t('dashboard.firmwareUpdateFailed', { defaultValue: '设置目标版本失败' }));
+      console.error('[firmware] setExpectedVersion failed:', err);
+      alert(err?.response?.data?.detail || err?.message || t('dashboard.firmwareUpdateFailed'));
     } finally {
       setFirmwareSaving(false);
     }
@@ -151,11 +153,11 @@ const Dashboard: React.FC<DashboardProps> = ({
       if (res.success) {
         setForceInstall(next);
       } else {
-        alert(t('dashboard.firmwareForceFailed', { defaultValue: '设置强制安装失败' }));
+        alert(t('dashboard.firmwareForceFailed'));
       }
     } catch (err: any) {
-      console.error('设置强制安装失败：', err);
-      alert(err?.response?.data?.detail || err?.message || t('dashboard.firmwareForceFailed', { defaultValue: '设置强制安装失败' }));
+      console.error('[firmware] setForceInstall failed:', err);
+      alert(err?.response?.data?.detail || err?.message || t('dashboard.firmwareForceFailed'));
     } finally {
       setFirmwareSaving(false);
     }
@@ -189,12 +191,27 @@ const Dashboard: React.FC<DashboardProps> = ({
         setForceInstall(Number(res.data.force_install) === 1);
         const savedWs = res.data.websocket_url || '';
         setWsUrl(savedWs);
+        // 兼容历史数据：旧记录可能仍是 string[]，新记录是 [{name, url}]
         const rawList = Array.isArray(res.data.websocket_url_list) ? res.data.websocket_url_list : [];
-        const cleanList = rawList.filter((u): u is string => typeof u === 'string' && u.trim() !== '');
-        const merged = savedWs && !cleanList.includes(savedWs)
-          ? [savedWs, ...cleanList]
-          : cleanList;
-        setWsUrlList(merged);
+        const cleanList: WsServerEntry[] = [];
+        const seenUrls = new Set<string>();
+        for (const item of rawList) {
+          let url = '';
+          let name = '';
+          if (typeof item === 'string') {
+            url = item.trim();
+          } else if (item && typeof item === 'object') {
+            url = typeof (item as any).url === 'string' ? (item as any).url.trim() : '';
+            name = typeof (item as any).name === 'string' ? (item as any).name.trim() : '';
+          }
+          if (!url || seenUrls.has(url)) continue;
+          seenUrls.add(url);
+          cleanList.push({ name, url });
+        }
+        if (savedWs && !seenUrls.has(savedWs)) {
+          cleanList.unshift({ name: '', url: savedWs });
+        }
+        setWsUrlList(cleanList);
         setAsrProvider((res.data.asr_provider as AsrProvider) || '');
         setTtsProvider((res.data.tts_provider as TtsProvider) || '');
         setLlmProvider((res.data.llm_provider as LlmProvider) || '');
@@ -240,9 +257,15 @@ const Dashboard: React.FC<DashboardProps> = ({
       const newOrdered = [selected, ...personas.filter(p => p.id !== activePersonaId)];
 
       const trimmedWs = wsUrl.trim();
-      const dedupList = Array.from(new Set(
-        wsUrlList.map(u => u.trim()).filter(Boolean)
-      ));
+      const dedupList: WsServerEntry[] = [];
+      const seen = new Set<string>();
+      for (const item of wsUrlList) {
+        const u = (item.url || '').trim();
+        const n = (item.name || '').trim();
+        if (!u || seen.has(u)) continue;
+        seen.add(u);
+        dedupList.push({ name: n, url: u });
+      }
       const payload: UserConfig = {
         persona: JSON.stringify(newOrdered),
         memory: memory,
@@ -283,22 +306,28 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const handleAddWsUrl = () => {
     const v = newWsUrl.trim();
+    const n = newWsName.trim();
+    if (!n) {
+      alert(t('dashboard.wsNameRequired'));
+      return;
+    }
     if (!isValidWsUrl(v)) {
       alert(t('dashboard.wsUrlInvalid'));
       return;
     }
-    if (wsUrlList.includes(v)) {
+    if (wsUrlList.some(item => item.url === v)) {
       alert(t('dashboard.wsUrlDuplicate'));
       return;
     }
-    setWsUrlList(prev => [...prev, v]);
+    setWsUrlList(prev => [...prev, { name: n, url: v }]);
     setWsUrl(v);
     setNewWsUrl('');
+    setNewWsName('');
     setShowWsUrlAdder(false);
   };
 
   const handleRemoveWsUrl = (target: string) => {
-    setWsUrlList(prev => prev.filter(u => u !== target));
+    setWsUrlList(prev => prev.filter(item => item.url !== target));
     if (wsUrl === target) setWsUrl('');
   };
 
@@ -367,9 +396,12 @@ const Dashboard: React.FC<DashboardProps> = ({
         <button onClick={() => onNavigate('SELECT_JABOBO')} className="flex items-center text-gray-400 hover:text-yellow-500 font-black text-[10px] uppercase tracking-widest transition-all">
           <ChevronLeft size={16} className="mr-1" /> {t('dashboard.switchDevice')}
         </button>
-        <div className="flex items-center space-x-2 px-3 py-1 rounded-full bg-gray-50 border border-gray-100 font-mono text-[10px] font-bold text-gray-400">
-          <Cpu size={12} className="text-yellow-500" />
-          <span>{jaboboId}</span>
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher forceVisible />
+          <div className="flex items-center space-x-2 px-3 py-1 rounded-full bg-gray-50 border border-gray-100 font-mono text-[10px] font-bold text-gray-400">
+            <Cpu size={12} className="text-yellow-500" />
+            <span>{jaboboId}</span>
+          </div>
         </div>
       </div>
 
@@ -414,13 +446,11 @@ const Dashboard: React.FC<DashboardProps> = ({
         <div className="w-full bg-gray-50 rounded-2xl p-4 mt-2">
           <div className="flex items-center mb-3 text-gray-800">
             <Download size={16} className="mr-2 text-yellow-500" />
-            <h3 className="font-bold text-sm">{t('dashboard.firmwareTarget', { defaultValue: '固件目标版本' })}</h3>
+            <h3 className="font-bold text-sm">{t('dashboard.firmwareTarget')}</h3>
             {firmwareSaving && <Loader2 className="animate-spin ml-2 text-gray-400" size={14} />}
           </div>
           <p className="text-[10px] text-gray-500 mb-3 leading-relaxed">
-            {t('dashboard.firmwareHint', {
-              defaultValue: '选择"不升级"时设备保持当前版本；选择具体版本后，下次设备 OTA 检查时会被通知升级。'
-            })}
+            {t('dashboard.firmwareHint')}
           </p>
           <select
             value={expectedVersion}
@@ -428,18 +458,18 @@ const Dashboard: React.FC<DashboardProps> = ({
             onChange={(e) => handleSaveExpectedVersion(e.target.value)}
             className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold focus:ring-2 focus:ring-yellow-400 focus:outline-none disabled:opacity-50"
           >
-            <option value="">{t('dashboard.firmwareNone', { defaultValue: '不升级（默认）' })}</option>
+            <option value="">{t('dashboard.firmwareNone')}</option>
             {firmwareList
               .filter(f => f.version !== null && f.version !== '')
               .map(f => (
                 <option key={f.filename} value={f.version as string}>
-                  {f.version}{currentVersion === f.version ? ` · ${t('dashboard.firmwareCurrent', { defaultValue: '当前' })}` : ''}{` (${(f.size / 1024 / 1024).toFixed(2)} MB)`}
+                  {f.version}{currentVersion === f.version ? ` · ${t('dashboard.firmwareCurrent')}` : ''}{` (${(f.size / 1024 / 1024).toFixed(2)} MB)`}
                 </option>
               ))}
           </select>
           {expectedVersion && !firmwareList.some(f => f.version === expectedVersion) && (
             <p className="text-[10px] text-red-500 mt-2 font-bold">
-              ⚠️ {t('dashboard.firmwareMissing', { defaultValue: '当前目标版本在服务端 OTA 目录中不存在，设备不会升级。' })}（{expectedVersion}）
+              ⚠️ {t('dashboard.firmwareMissing')} ({expectedVersion})
             </p>
           )}
           <label className={`flex items-start mt-3 ${expectedVersion ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}>
@@ -451,12 +481,10 @@ const Dashboard: React.FC<DashboardProps> = ({
               className="mt-0.5 mr-2 accent-yellow-500"
             />
             <span className="text-[11px] text-gray-700 leading-relaxed">
-              <span className="font-bold">{t('dashboard.firmwareForce', { defaultValue: '强制安装该版本（允许回退）' })}</span>
+              <span className="font-bold">{t('dashboard.firmwareForce')}</span>
               <br />
               <span className="text-[10px] text-gray-500">
-                {t('dashboard.firmwareForceHint', {
-                  defaultValue: '勾选后下发 force=1，固件端跳过"高版本才升级"的判断；可用于回退到低版本。仅当目标版本与当前版本号完全相同时仍会被固件跳过。'
-                })}
+                {t('dashboard.firmwareForceHint')}
               </span>
             </span>
           </label>
@@ -540,15 +568,17 @@ const Dashboard: React.FC<DashboardProps> = ({
               <select
                 value={wsUrl}
                 onChange={(e) => setWsUrl(e.target.value)}
-                className="flex-1 bg-gray-50 rounded-2xl p-4 text-sm text-gray-600 focus:outline-none font-mono appearance-none cursor-pointer"
+                className="flex-1 bg-gray-50 rounded-2xl p-4 text-sm text-gray-600 focus:outline-none appearance-none cursor-pointer"
                 aria-label={t('dashboard.wsUrlSelect')}
               >
                 <option value="">{t('dashboard.wsUrlDefault')}</option>
-                {wsUrlList.map((url) => (
-                  <option key={url} value={url}>{url}</option>
+                {wsUrlList.map(({ name, url }) => (
+                  <option key={url} value={url} title={url}>
+                    {name || url}
+                  </option>
                 ))}
               </select>
-              {wsUrl && wsUrlList.includes(wsUrl) && (
+              {wsUrl && wsUrlList.some(item => item.url === wsUrl) && (
                 <button
                   type="button"
                   onClick={() => {
@@ -571,30 +601,53 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <Plus size={16} />
               </button>
             </div>
+            {wsUrl && (
+              <p className="mt-2 text-[11px] text-gray-400 font-mono break-all" title={wsUrl}>
+                {wsUrl}
+              </p>
+            )}
             {showWsUrlAdder && (
-              <div className="mt-2 flex items-center gap-2">
+              <div className="mt-2 space-y-2">
                 <input
                   ref={newWsUrlInputRef}
                   type="text"
-                  value={newWsUrl}
-                  onChange={(e) => setNewWsUrl(e.target.value)}
+                  value={newWsName}
+                  onChange={(e) => setNewWsName(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleAddWsUrl();
                     if (e.key === 'Escape') {
                       setShowWsUrlAdder(false);
                       setNewWsUrl('');
+                      setNewWsName('');
                     }
                   }}
-                  className="flex-1 bg-gray-50 rounded-2xl p-3 text-sm text-gray-600 focus:outline-none font-mono"
-                  placeholder={t('dashboard.wsUrlNewPlaceholder')}
+                  className="w-full bg-gray-50 rounded-2xl p-3 text-sm text-gray-600 focus:outline-none"
+                  placeholder={t('dashboard.wsNamePlaceholder')}
                 />
-                <button
-                  type="button"
-                  onClick={handleAddWsUrl}
-                  className="px-4 py-3 rounded-xl bg-yellow-400 text-gray-900 text-xs font-black active:scale-95"
-                >
-                  {t('dashboard.wsUrlAdd')}
-                </button>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={newWsUrl}
+                    onChange={(e) => setNewWsUrl(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleAddWsUrl();
+                      if (e.key === 'Escape') {
+                        setShowWsUrlAdder(false);
+                        setNewWsUrl('');
+                        setNewWsName('');
+                      }
+                    }}
+                    className="flex-1 bg-gray-50 rounded-2xl p-3 text-sm text-gray-600 focus:outline-none font-mono"
+                    placeholder={t('dashboard.wsUrlNewPlaceholder')}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddWsUrl}
+                    className="px-4 py-3 rounded-xl bg-yellow-400 text-gray-900 text-xs font-black active:scale-95"
+                  >
+                    {t('dashboard.wsUrlAdd')}
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -647,7 +700,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                         className="cursor-pointer"
                       />
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm text-gray-700 truncate">{v.name}</div>
+                        <div className="text-sm text-gray-700 truncate">{isDefault ? t(`dashboard.${v.name}`) : v.name}</div>
                         <div className="text-[10px] font-mono text-gray-400 truncate">{v.id}</div>
                       </div>
                       {isDefault ? (
@@ -701,14 +754,14 @@ const Dashboard: React.FC<DashboardProps> = ({
 
           <div className="mt-4">
             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1">
-              <Sparkles size={10} /> LLM
+              <Sparkles size={10} /> {t('dashboard.llmProvider')}
             </label>
             <select
               value={llmProvider}
               onChange={(e) => setLlmProvider(e.target.value as LlmProvider)}
               className="w-full bg-gray-50 rounded-2xl p-4 text-sm text-gray-600 focus:outline-none cursor-pointer"
             >
-              <option value="">默认（Qwen Turbo）</option>
+              <option value="">{t('dashboard.llmDefault')}</option>
               <option value="qwen-turbo">Qwen Turbo</option>
               <option value="deepseek-v4-flash">DeepSeek v4 Flash</option>
               <option value="gpt-5.4-nano">GPT-5.4 Nano</option>

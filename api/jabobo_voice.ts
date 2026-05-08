@@ -23,7 +23,7 @@ export const JaboboVoice = {
       headers: { 'Content-Type': 'multipart/form-data' },
       onUploadProgress: (progressEvent) => {
         const percent = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
-        console.log(`音频上传进度：${percent}%`);
+        console.log(`[audio] upload progress: ${percent}%`);
       }
     });
     return response.data;
@@ -52,8 +52,8 @@ export const JaboboVoice = {
       if (!jaboboId || !voiceprintName || !filePath) {
         return {
           success: false,
-          message: '缺少必要参数：设备ID、声纹名称、文件路径不能为空',
-          detail: '',
+          message: '',
+          detail: 'Missing parameters: jabobo_id, voiceprint_name and file_path are required',
           data: {} as VoiceprintRegisterResponse
         };
       }
@@ -71,17 +71,17 @@ export const JaboboVoice = {
 
       return {
         success: true,
-        message: response.data?.message || '注册成功',
+        message: response.data?.message || '',
         detail: '',
         data: response.data?.data || {} as VoiceprintRegisterResponse
       };
     } catch (error) {
-      console.error("【注册错误】:", error);
+      console.error("[voiceprint] register error:", error);
       const axiosError = error as any;
       const backendError = axiosError.response?.data || {};
       return {
         success: false,
-        message: backendError?.message || axiosError.message || '注册失败',
+        message: backendError?.message || axiosError.message || '',
         detail: JSON.stringify(backendError?.detail || axiosError.stack),
         data: {} as VoiceprintRegisterResponse
       };
@@ -93,20 +93,20 @@ export const JaboboVoice = {
       const response = await apiClient.get('/voiceprint/list', { params: { jabobo_id: jaboboId } });
       return {
         success: true,
-        message: response.data?.message || '获取声纹列表成功',
+        message: response.data?.message || '',
         detail: '',
         data: response.data?.voiceprint_list || [] as RegisteredVoiceprint[]
       };
     } catch (error) {
-      console.error("【获取声纹列表错误】:", error);
+      console.error("[voiceprint] list error:", error);
       const axiosError = error as any;
       const backendError = axiosError.response?.data || {};
       return {
         success: false,
-        message: axiosError.response?.status === 404 
-          ? '声纹列表接口路径错误' 
-          : backendError?.message || axiosError.message || '获取声纹列表失败',
-        detail: JSON.stringify(backendError?.detail || axiosError.stack),
+        message: backendError?.message || axiosError.message || '',
+        detail: axiosError.response?.status === 404
+          ? 'Voiceprint list endpoint not found'
+          : JSON.stringify(backendError?.detail || axiosError.stack),
         data: [] as RegisteredVoiceprint[]
       };
     }
@@ -129,8 +129,8 @@ export const JaboboVoice = {
       if (!jaboboId?.trim() || !speakerId?.trim() || !voiceprintName?.trim()) {
         return {
           success: false,
-          message: '设备ID、声纹ID、声纹名称不能为空',
-          detail: '',
+          message: '',
+          detail: 'Missing parameters: jabobo_id, speaker_id and voiceprint_name are required',
           data: {}
         };
       }
@@ -146,12 +146,12 @@ export const JaboboVoice = {
 
       return {
         success: true,
-        message: response.data?.msg || '声纹删除成功',
+        message: response.data?.msg || '',
         detail: '',
         data: response.data || {}
       };
     } catch (error) {
-      console.error("【删除声纹错误】:", error);
+      console.error("[voiceprint] delete error:", error);
       const axiosError = error as any;
       const backendError = axiosError.response?.data || {};
       const rawDetail = backendError?.detail;
@@ -160,7 +160,7 @@ export const JaboboVoice = {
         : (typeof rawDetail === 'string' ? rawDetail : (rawDetail ? JSON.stringify(rawDetail) : ''));
       return {
         success: false,
-        message: detailMsg || axiosError.message || '删除声纹失败',
+        message: detailMsg || axiosError.message || '',
         detail: JSON.stringify(backendError || axiosError.stack),
         data: {}
       };

@@ -21,7 +21,7 @@ i18n
     },
     // 关键补充：指定翻译文件加载路径（匹配public/locales目录）
     backend: {
-      loadPath: '/locales/{{lng}}/{{ns}}.json',
+      loadPath: '/jabobo/locales/{{lng}}/{{ns}}.json',
     },
     defaultNS: 'translation', // 默认命名空间（对应translation.json）
   });

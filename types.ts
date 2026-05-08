@@ -120,15 +120,21 @@ export interface VoiceOption {
   name: string;
 }
 
-// 内置默认音色，前端展示用，不写入 DB；后端在 voice_id 为空时套用同一 ID。
+// Built-in default voices for UI display; not persisted. Backend applies the same ID when voice_id is empty.
+// `name` is the i18n key (under `dashboard`), resolved at render time.
 export const DEFAULT_AZURE_VOICE: VoiceOption = {
   id: 'zh-CN-XiaoxiaoNeural',
-  name: '晓晓（默认）',
+  name: 'ttsVoiceXiaoxiao',
 };
 export const DEFAULT_HUOSHAN_VOICE: VoiceOption = {
   id: 'custom_mix_bigtts',
-  name: '混合音色（默认）',
+  name: 'ttsVoiceMix',
 };
+
+export interface WsServerEntry {
+  name: string;
+  url: string;
+}
 
 export interface UserConfig {
   persona: string;
@@ -139,7 +145,7 @@ export interface UserConfig {
   expected_version: string;
   force_install?: number;
   websocket_url?: string;
-  websocket_url_list?: string[];
+  websocket_url_list?: WsServerEntry[];
   asr_provider?: AsrProvider;
   tts_provider?: TtsProvider;
   llm_provider?: LlmProvider;
