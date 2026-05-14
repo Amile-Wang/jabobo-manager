@@ -204,7 +204,14 @@
     "firmwareUpdateFailed": "设置目标版本失败",
     "firmwareForceFailed": "设置强制安装失败",
     "llmProvider": "大语言模型",
-    "llmDefault": "默认（Qwen Turbo）"
+    "llmDefault": "默认（Qwen Turbo）",
+    "wakeWord": "唤醒词定制",
+    "wakeWordPlaceholder": "输入自定义唤醒词，如：Hi, Jabra",
+    "wakeWordSaved": "已保存",
+    "wakeWordTraining": "训练中...",
+    "wakeWordReady": "模型已部署",
+    "wakeWordDuration": "耗时 {{seconds}} 秒",
+    "wakeWordFailed": "训练失败"
   },
   "voiceprint": {
     "title": "声纹管理",

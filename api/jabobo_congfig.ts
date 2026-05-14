@@ -1,4 +1,4 @@
-import { ApiResponse, UserConfig } from "@/types";
+import { ApiResponse, UserConfig, WakeWordStatus } from "@/types";
 import apiClient from "./apiClient";
 
 
@@ -17,6 +17,14 @@ export const JaboboConfig = {
       const response = await apiClient.post('/user/sync-config', {
         jabobo_id: jaboboId,
         ...data
+      });
+      return response.data;
+    },
+
+    // 查询唤醒词训练状态
+    getWakeWordStatus: async (jaboboId: string): Promise<ApiResponse<WakeWordStatus>> => {
+      const response = await apiClient.get('/user/wake-word-status', {
+        params: { jabobo_id: jaboboId }
       });
       return response.data;
     }

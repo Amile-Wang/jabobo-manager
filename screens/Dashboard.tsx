@@ -55,6 +55,11 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [huoshanVoiceId, setHuoshanVoiceId] = useState<string>('');
   const [huoshanVoiceList, setHuoshanVoiceList] = useState<VoiceOption[]>([]);
   const [ragEnabled, setRagEnabled] = useState<boolean>(false);
+  const [wakeWordText, setWakeWordText] = useState<string>('');
+  const [wakeWordModelStatus, setWakeWordModelStatus] = useState<number>(0);
+  const [wakeWordTaskStatus, setWakeWordTaskStatus] = useState<string>('idle');
+  const [wakeWordMessage, setWakeWordMessage] = useState<string>('');
+  const [wakeWordElapsedSeconds, setWakeWordElapsedSeconds] = useState<number | null>(null);
   const [newVoiceId, setNewVoiceId] = useState('');
   const [newVoiceName, setNewVoiceName] = useState('');
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -220,6 +225,32 @@ const Dashboard: React.FC<DashboardProps> = ({
         setHuoshanVoiceId(res.data.huoshan_tts_voice_id || '');
         setHuoshanVoiceList(Array.isArray(res.data.huoshan_tts_voice_list) ? res.data.huoshan_tts_voice_list : []);
         setRagEnabled(!!res.data.rag_enabled);
+        setWakeWordText(res.data.wake_word_text || '');
+        setWakeWordModelStatus(res.data.wake_word_model_status ?? 0);
+        setWakeWordTaskStatus('idle');
+        setWakeWordMessage('');
+          // 如果有唤醒词文本且状态不为 0，查询实时状态
+        const savedText = res.data.wake_word_text || '';
+        const savedStatus = res.data.wake_word_model_status ?? 0;
+        if (savedText && savedStatus !== 0) {
+          try {
+            const statusRes = await JaboboConfig.getWakeWordStatus(jaboboId);
+            // 后端 /user/wake-word-status 返回裸 JSON（无 success 字段），直接读字段
+            if (statusRes && statusRes.task_status) {
+              const { task_status, task_message, model_status, elapsed_seconds } = statusRes;
+              setWakeWordTaskStatus(task_status);
+              setWakeWordMessage(task_message);
+              setWakeWordModelStatus(model_status);
+              setWakeWordElapsedSeconds(elapsed_seconds);
+              // 如果 task 还在 running（训练/deploy 中），启动轮询以跟踪完成
+              if (task_status === 'running') {
+                pollWakeWordStatus(jaboboId);
+              }
+            }
+          } catch (e) {
+            console.error('唤醒词状态查询失败：', e);
+          }
+        }
         console.log('从接口读取的版本号：', { current_version: cv, expected_version: ev });
       }
     } catch (err) { console.error('获取配置失败：', err); }
@@ -283,12 +314,39 @@ const Dashboard: React.FC<DashboardProps> = ({
         huoshan_tts_voice_id: huoshanVoiceId,
         huoshan_tts_voice_list: huoshanVoiceList,
         rag_enabled: ragEnabled,
+        wake_word_text: wakeWordText,
+        wake_word_model_status: wakeWordModelStatus,
       };
       
       const res = await JaboboConfig.syncConfig(jaboboId, payload);
       
       if (res.success) {
         setPersonas(newOrdered);
+        // 如果有唤醒词文本，先立即查一次状态
+        if (wakeWordText.trim()) {
+          try {
+            const statusRes = await JaboboConfig.getWakeWordStatus(jaboboId);
+            // 后端返回裸 JSON，直接读字段
+            if (statusRes && statusRes.task_status) {
+              const { task_status, task_message, model_status, elapsed_seconds } = statusRes;
+              setWakeWordTaskStatus(task_status);
+              setWakeWordMessage(task_message);
+              setWakeWordModelStatus(model_status);
+              setWakeWordElapsedSeconds(elapsed_seconds);
+              // 如果不是最终状态，启动轮询
+              if (task_status !== 'done' && task_status !== 'failed') {
+                setWakeWordTaskStatus('running');
+                setWakeWordMessage(t('dashboard.wakeWordTraining'));
+                pollWakeWordStatus(jaboboId);
+              }
+            }
+          } catch {
+            // 查不到就 fallback 到轮询
+            setWakeWordTaskStatus('running');
+            setWakeWordMessage(t('dashboard.wakeWordTraining'));
+            pollWakeWordStatus(jaboboId);
+          }
+        }
         alert(`${t('dashboard.syncSuccess')} ${jaboboId.slice(-4)}！`);
       }
     } catch (err) {
@@ -296,6 +354,49 @@ const Dashboard: React.FC<DashboardProps> = ({
     } finally {
       setIsSyncing(false);
     }
+  };
+
+  const fetchWakeWordStatus = async (deviceId: string) => {
+    // 单次查询唤醒词状态（页面加载/切换设备时用）
+    try {
+      const res = await JaboboConfig.getWakeWordStatus(deviceId);
+      console.log('唤醒词状态查询结果：', res);
+      // 后端返回裸 JSON（无 success 字段），直接读字段
+      if (res && res.task_status) {
+        const { task_status, task_message, model_status } = res;
+        console.log('唤醒词状态：', { task_status, task_message, model_status });
+        setWakeWordTaskStatus(task_status);
+        setWakeWordMessage(task_message);
+        setWakeWordModelStatus(model_status);
+      }
+    } catch (e) {
+      console.error('唤醒词状态查询失败：', e);
+    }
+  };
+
+  const pollWakeWordStatus = (deviceId: string) => {
+    // 每 5 秒轮询，直到任务完成或失败
+    const interval = setInterval(async () => {
+      try {
+        const res = await JaboboConfig.getWakeWordStatus(deviceId);
+        // 后端返回裸 JSON，直接读字段
+        if (res && res.task_status) {
+          const { task_status, task_message, model_status, elapsed_seconds } = res;
+          setWakeWordTaskStatus(task_status);
+          setWakeWordMessage(task_message);
+          setWakeWordModelStatus(model_status);
+          setWakeWordElapsedSeconds(elapsed_seconds);
+          if (task_status === 'done' || task_status === 'failed') {
+            clearInterval(interval);
+          }
+        }
+      } catch {
+        // 轮询出错时停止并重置状态
+        clearInterval(interval);
+        setWakeWordTaskStatus('idle');
+        setWakeWordMessage('');
+      }
+    }, 5000);
   };
 
   const isValidWsUrl = (raw: string): boolean => {
@@ -648,6 +749,61 @@ const Dashboard: React.FC<DashboardProps> = ({
                     {t('dashboard.wsUrlAdd')}
                   </button>
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* 唤醒词定制 */}
+          <div className="mt-4">
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+              <Mic size={10} /> {t('dashboard.wakeWord')}
+            </label>
+            <input
+              type="text"
+              value={wakeWordText}
+              onChange={(e) => {
+                setWakeWordText(e.target.value);
+                setWakeWordTaskStatus('idle');
+                setWakeWordMessage('');
+                setWakeWordElapsedSeconds(null);
+              }}
+              placeholder={t('dashboard.wakeWordPlaceholder')}
+              className="w-full bg-gray-50 rounded-2xl p-4 text-sm text-gray-600 focus:outline-none"
+            />
+            {wakeWordText && (
+              <p className="mt-1 text-[10px] text-gray-400 font-mono break-all">
+                {t('dashboard.wakeWordSaved')}: {wakeWordText}
+              </p>
+            )}
+            {/* 训练状态显示 */}
+            {wakeWordText && wakeWordTaskStatus !== 'idle' && (
+              <div className="mt-2 flex items-center gap-1 text-[10px]">
+                {wakeWordTaskStatus === 'running' && (
+                  <>
+                    <RefreshCw size={10} className="animate-spin text-yellow-500" />
+                    <span className="text-yellow-600">{wakeWordMessage || t('dashboard.wakeWordTraining')}</span>
+                  </>
+                )}
+                {wakeWordTaskStatus === 'done' && (
+                  <>
+                    <span className="text-green-600">{t('dashboard.wakeWordReady')}</span>
+                    {wakeWordElapsedSeconds != null && (
+                      <span className="text-gray-400 ml-1">
+                        · {t('dashboard.wakeWordDuration', { seconds: wakeWordElapsedSeconds })}
+                      </span>
+                    )}
+                  </>
+                )}
+                {wakeWordTaskStatus === 'failed' && (
+                  <>
+                    <span className="text-red-500">{wakeWordMessage || t('dashboard.wakeWordFailed')}</span>
+                    {wakeWordElapsedSeconds != null && (
+                      <span className="text-gray-400 ml-1">
+                        · {t('dashboard.wakeWordDuration', { seconds: wakeWordElapsedSeconds })}
+                      </span>
+                    )}
+                  </>
+                )}
               </div>
             )}
           </div>

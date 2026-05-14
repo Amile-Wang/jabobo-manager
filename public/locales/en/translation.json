@@ -204,7 +204,14 @@
     "firmwareUpdateFailed": "Failed to set target version",
     "firmwareForceFailed": "Failed to set force install",
     "llmProvider": "LLM",
-    "llmDefault": "Default (Qwen Turbo)"
+    "llmDefault": "Default (Qwen Turbo)",
+    "wakeWord": "Wake Word Customization",
+    "wakeWordPlaceholder": "Enter a custom wake word, e.g. Hi, Jabra",
+    "wakeWordSaved": "Saved",
+    "wakeWordTraining": "Training...",
+    "wakeWordReady": "Model deployed",
+    "wakeWordDuration": "Elapsed {{seconds}}s",
+    "wakeWordFailed": "Training failed"
   },
   "voiceprint": {
     "title": "Voiceprint Management",

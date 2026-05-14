@@ -154,6 +154,16 @@ export interface UserConfig {
   huoshan_tts_voice_id?: string;
   huoshan_tts_voice_list?: VoiceOption[];
   rag_enabled?: boolean;
+  wake_word_text?: string;
+  wake_word_model_status?: number;
+}
+
+/** 唤醒词训练状态查询返回 */
+export interface WakeWordStatus {
+  wake_word_text: string;
+  model_status: number;
+  task_status: "idle" | "running" | "done" | "failed";
+  task_message: string;
 }
 
 /**
